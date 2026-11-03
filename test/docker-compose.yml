@@ -1,0 +1,39 @@
+# Throw-away servers for integration tests. Credentials are test-only.
+name: iremote-test
+
+services:
+  sftp:
+    image: atmoz/sftp
+    platform: linux/amd64
+    command: tester:pass:1001:1001:upload
+    ports:
+      - "2222:22"
+    volumes:
+      - ./fixtures/id_ed25519.pub:/home/tester/.ssh/keys/id_ed25519.pub:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep sshd"]
+      interval: 2s
+      retries: 30
+
+  ftps:
+    build: ./proftpd
+    ports:
+      - "2121:21"
+      - "30000-30009:30000-30009"
+
+  vsftpd:
+    image: delfer/alpine-ftp-server
+    environment:
+      USERS: "tester|pass|/home/tester"
+      ADDRESS: 127.0.0.1
+      MIN_PORT: "31000"
+      MAX_PORT: "31009"
+    ports:
+      - "2122:21"
+      - "31000-31009:31000-31009"
+
+  webdav:
+    image: rclone/rclone
+    command: serve webdav /data --addr :8080 --user tester --pass pass
+    ports:
+      - "8080:8080"

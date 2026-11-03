@@ -1,0 +1,14 @@
+**
+!dist/extension.js
+!dist/webview/*.js
+!dist/webview/*.css
+!dist/webview/*.ttf
+!media/icon.png
+!media/activity.svg
+!media/settings-*.svg
+!media/sync-*.svg
+!schemas/**
+!package.json
+!README.md
+!CHANGELOG.md
+!LICENSE

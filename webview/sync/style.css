@@ -1,0 +1,244 @@
+@import '../shared/base.css';
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--vscode-descriptionForeground);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 6px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.filters,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+
+.actions {
+  gap: 4px;
+}
+
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.separator {
+  width: 1px;
+  height: 18px;
+  margin: 0 6px;
+  background: var(--border);
+}
+
+.table-wrap {
+  flex: 1;
+  overflow: auto;
+}
+
+.sync-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 5px 8px;
+  text-align: left;
+  font-weight: 600;
+  background: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--border);
+}
+
+.sync-table td {
+  padding: 3px 8px;
+  white-space: nowrap;
+  border-bottom: 1px solid transparent;
+}
+
+.sync-table tbody tr {
+  cursor: default;
+  user-select: none;
+}
+
+.sync-table tbody tr:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.sync-table tbody tr.selected {
+  background: var(--vscode-list-inactiveSelectionBackground);
+}
+
+.sync-table .chk {
+  width: 28px;
+}
+
+.sync-table .act {
+  width: 44px;
+  text-align: center;
+}
+
+.sync-table .st {
+  width: 28px;
+}
+
+.sync-table .side {
+  width: 22%;
+}
+
+.sync-table td.path {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.sync-table .rel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-table a {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+}
+
+.sync-table a:hover {
+  text-decoration: underline;
+}
+
+.badge {
+  flex: none;
+  min-width: 92px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 0.85em;
+  text-align: center;
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-badge-background);
+}
+
+.badge.state-localOnly,
+.badge.state-localNewer {
+  color: var(--vscode-editor-background);
+  background: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-charts-green));
+}
+
+.badge.state-remoteOnly,
+.badge.state-remoteNewer {
+  color: var(--vscode-editor-background);
+  background: var(--vscode-gitDecoration-modifiedResourceForeground, var(--vscode-charts-blue));
+}
+
+.badge.state-conflict {
+  color: var(--vscode-editor-background);
+  background: var(--vscode-gitDecoration-conflictingResourceForeground, var(--vscode-charts-red));
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  padding: 0;
+  color: var(--vscode-icon-foreground);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.action:hover:not(:disabled) {
+  background: var(--vscode-toolbar-hoverBackground);
+}
+
+.action-upload {
+  color: var(--vscode-gitDecoration-addedResourceForeground, var(--vscode-charts-green));
+}
+
+.action-download {
+  color: var(--vscode-gitDecoration-modifiedResourceForeground, var(--vscode-charts-blue));
+}
+
+.action-deleteRemote,
+.action-deleteLocal {
+  color: var(--vscode-errorForeground);
+}
+
+.action-skip {
+  opacity: 0.6;
+}
+
+.st.done {
+  color: var(--vscode-testing-iconPassed, var(--vscode-charts-green));
+}
+
+.st.failed {
+  color: var(--vscode-errorForeground);
+}
+
+.message {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.message.error {
+  color: var(--vscode-errorForeground);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.footer .buttons {
+  display: flex;
+  gap: 8px;
+}

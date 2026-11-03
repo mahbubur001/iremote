@@ -1,0 +1,87 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "iRemote deployment configuration",
+  "description": "Servers, mappings and options for iRemote. Passwords are stored in the OS keychain, never in this file.",
+  "type": "object",
+  "required": ["version", "servers"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "defaultServer": { "type": "string", "description": "Id of the default server (target of automatic upload)." },
+    "options": { "$ref": "#/definitions/options" },
+    "servers": { "type": "array", "items": { "$ref": "#/definitions/server" } },
+    "globalServerData": {
+      "type": "object",
+      "description": "Mappings for servers shared across projects, keyed by server id.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "mappings": { "type": "array", "items": { "$ref": "#/definitions/mapping" } },
+          "excludedLocal": { "type": "array", "items": { "type": "string" } },
+          "excludedRemote": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "mapping": {
+      "type": "object",
+      "required": ["remote"],
+      "properties": {
+        "local": { "type": "string", "description": "Local path relative to the project root (empty = root) or absolute." },
+        "remote": { "type": "string", "description": "Deployment path relative to the server root path." },
+        "web": { "type": "string", "description": "Web path relative to the web server URL." }
+      },
+      "additionalProperties": false
+    },
+    "server": {
+      "type": "object",
+      "required": ["id", "name", "type", "rootPath"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+        "name": { "type": "string" },
+        "type": { "enum": ["sftp", "ftp", "ftps", "ftps-implicit", "webdav", "local"] },
+        "host": { "type": "string", "description": "Host name; for WebDAV the full endpoint URL." },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "username": { "type": "string" },
+        "auth": { "enum": ["password", "key", "agent", "openssh"], "description": "SFTP authentication." },
+        "privateKeyPath": { "type": "string" },
+        "sshConfigHost": { "type": "string", "description": "Host alias in ~/.ssh/config (auth = openssh)." },
+        "jumpHost": { "type": "string", "description": "user@host:port of an SSH bastion." },
+        "rootPath": { "type": "string" },
+        "webUrl": { "type": "string" },
+        "passive": { "type": "boolean" },
+        "allowUntrustedCertificate": { "type": "boolean" },
+        "trustedCertificateFingerprint": { "type": "string" },
+        "webdavAuth": { "enum": ["basic", "digest", "none"] },
+        "encoding": { "enum": ["utf8", "latin1", "ascii", "utf16le"] },
+        "maxConnections": { "type": "integer", "minimum": 1 },
+        "keepAliveSeconds": { "type": "integer", "minimum": 0 },
+        "allowShellCommands": { "type": "boolean" },
+        "mappings": { "type": "array", "items": { "$ref": "#/definitions/mapping" } },
+        "excludedLocal": { "type": "array", "items": { "type": "string" } },
+        "excludedRemote": { "type": "array", "items": { "type": "string" } },
+        "password": { "not": {}, "description": "Not allowed: passwords are stored in the OS keychain." },
+        "passphrase": { "not": {}, "description": "Not allowed: passphrases are stored in the OS keychain." }
+      }
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "autoUpload": { "enum": ["always", "onExplicitSave", "never"] },
+        "skipExternalChanges": { "type": "boolean" },
+        "deleteRemoteOnLocalDelete": { "type": "boolean" },
+        "createEmptyDirectories": { "type": "boolean" },
+        "preserveTimestamps": { "type": "boolean" },
+        "warnOnNewerRemote": { "enum": ["none", "timestampAndSize", "content"] },
+        "filePermissions": { "type": "string", "pattern": "^([0-7]{3,4})?$" },
+        "folderPermissions": { "type": "string", "pattern": "^([0-7]{3,4})?$" },
+        "excludeNames": { "type": "array", "items": { "type": "string" } },
+        "confirmRemoteDelete": { "type": "boolean" },
+        "overwriteUpToDate": { "type": "boolean" },
+        "notifyRemoteChanges": { "type": "boolean" },
+        "concurrency": { "type": "integer", "minimum": 1, "maximum": 16 }
+      }
+    }
+  }
+}

@@ -1,0 +1,677 @@
+{
+  "name": "iremote",
+  "displayName": "iRemote \u2014 Deployment & Remote Host",
+  "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
+  "version": "1.0.0",
+  "publisher": "radiustheme",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "sftp",
+    "ftp",
+    "ftps",
+    "webdav",
+    "deployment",
+    "remote",
+    "upload",
+    "sync",
+    "phpstorm"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "workspaceContains:.vscode/iremote.json",
+    "workspaceContains:.idea/deployment.xml",
+    "onFileSystem:iremote"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "iRemote reads deployment configuration from the workspace and connects to remote servers."
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "iremote.openSettings",
+        "title": "Deployment Settings\u2026",
+        "category": "iRemote",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "iremote.uploadToDefault",
+        "title": "Upload to Default Server",
+        "category": "iRemote",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "iremote.uploadTo",
+        "title": "Upload to\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.downloadFromDefault",
+        "title": "Download from Default Server",
+        "category": "iRemote",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "iremote.downloadFrom",
+        "title": "Download from\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.syncWithDeployed",
+        "title": "Sync with Deployed to\u2026",
+        "category": "iRemote",
+        "icon": "$(sync)"
+      },
+      {
+        "command": "iremote.compareWithDeployed",
+        "title": "Compare with Deployed Version",
+        "category": "iRemote",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "iremote.compareWithDeployedOn",
+        "title": "Compare with Deployed Version on\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.toggleAutoUpload",
+        "title": "Toggle Automatic Upload",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.setDefaultServer",
+        "title": "Set Default Server\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.browseRemoteHost",
+        "title": "Browse Remote Host",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.importPhpStorm",
+        "title": "Import PhpStorm Deployment Configuration",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.openInBrowser",
+        "title": "Open in Browser (Deployment Web URL)",
+        "category": "iRemote",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "iremote.showTransferLog",
+        "title": "Show File Transfer Log",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.cancelTransfers",
+        "title": "Cancel Pending Transfers",
+        "category": "iRemote",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "iremote.clearTransfers",
+        "title": "Clear Finished Transfers",
+        "category": "iRemote",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "iremote.disconnectAll",
+        "title": "Disconnect All Servers",
+        "category": "iRemote",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "iremote.forgetCredentials",
+        "title": "Forget Saved Credentials\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.switchServer",
+        "title": "Choose Server\u2026",
+        "category": "iRemote",
+        "icon": "$(server)"
+      },
+      {
+        "command": "iremote.remote.refresh",
+        "title": "Refresh",
+        "category": "iRemote",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "iremote.remote.collapseAll",
+        "title": "Collapse All",
+        "category": "iRemote",
+        "icon": "$(collapse-all)"
+      },
+      {
+        "command": "iremote.remote.open",
+        "title": "Edit Remote File",
+        "category": "iRemote",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "iremote.remote.openLocal",
+        "title": "Open Local Mapped File",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.newFile",
+        "title": "New File\u2026",
+        "category": "iRemote",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "iremote.remote.newFolder",
+        "title": "New Folder\u2026",
+        "category": "iRemote",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "iremote.remote.rename",
+        "title": "Rename\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.delete",
+        "title": "Delete",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.download",
+        "title": "Download from Here",
+        "category": "iRemote",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "iremote.remote.uploadHere",
+        "title": "Upload Here\u2026",
+        "category": "iRemote",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "iremote.remote.compareWithLocal",
+        "title": "Compare with Local Version",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.syncWithLocal",
+        "title": "Sync with Local\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.copyPath",
+        "title": "Copy Remote Path",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.copyWebUrl",
+        "title": "Copy Web URL",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.chmod",
+        "title": "Change Permissions\u2026",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.revealLocal",
+        "title": "Reveal Local Mapped File in Explorer",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.openInBrowser",
+        "title": "Open in Browser",
+        "category": "iRemote"
+      },
+      {
+        "command": "iremote.remote.mountWorkspace",
+        "title": "Add Server as Workspace Folder",
+        "category": "iRemote",
+        "icon": "$(root-folder-opened)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "iremote",
+          "title": "iRemote",
+          "icon": "media/activity.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "iremote-panel",
+          "title": "File Transfer",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "views": {
+      "iremote": [
+        {
+          "id": "iremote.remoteHost",
+          "name": "Remote Host",
+          "icon": "media/activity.svg",
+          "contextualTitle": "iRemote"
+        }
+      ],
+      "iremote-panel": [
+        {
+          "id": "iremote.transfers",
+          "name": "File Transfer",
+          "icon": "media/activity.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "iremote.remoteHost",
+        "contents": "No deployment servers configured.\n[Configure Deployment](command:iremote.openSettings)\n[Import from PhpStorm](command:iremote.importPhpStorm)",
+        "when": "!iremote.hasServers"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "iremote.remote.refresh",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.collapseAll",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.open",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.openLocal",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.newFile",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.newFolder",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.rename",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.delete",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.download",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.uploadHere",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.compareWithLocal",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.syncWithLocal",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.copyPath",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.copyWebUrl",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.chmod",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.revealLocal",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.openInBrowser",
+          "when": "false"
+        },
+        {
+          "command": "iremote.remote.mountWorkspace",
+          "when": "false"
+        },
+        {
+          "command": "iremote.clearTransfers",
+          "when": "false"
+        }
+      ],
+      "explorer/context": [
+        {
+          "submenu": "iremote.deployment",
+          "group": "7_iremote@1",
+          "when": "iremote.hasServers"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "iremote.deployment",
+          "group": "7_iremote@1",
+          "when": "iremote.hasServers && resourceScheme == file"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "submenu": "iremote.deployment",
+          "group": "7_iremote@1",
+          "when": "iremote.hasServers && resourceScheme == file"
+        }
+      ],
+      "iremote.deployment": [
+        {
+          "command": "iremote.uploadToDefault",
+          "group": "1_transfer@1",
+          "when": "iremote.hasDefaultServer"
+        },
+        {
+          "command": "iremote.uploadTo",
+          "group": "1_transfer@2"
+        },
+        {
+          "command": "iremote.downloadFromDefault",
+          "group": "1_transfer@3",
+          "when": "iremote.hasDefaultServer"
+        },
+        {
+          "command": "iremote.downloadFrom",
+          "group": "1_transfer@4"
+        },
+        {
+          "command": "iremote.compareWithDeployed",
+          "group": "2_compare@1",
+          "when": "iremote.hasDefaultServer"
+        },
+        {
+          "command": "iremote.compareWithDeployedOn",
+          "group": "2_compare@2"
+        },
+        {
+          "command": "iremote.syncWithDeployed",
+          "group": "2_compare@3"
+        },
+        {
+          "command": "iremote.openInBrowser",
+          "group": "3_misc@1",
+          "when": "iremote.hasDefaultServer"
+        },
+        {
+          "command": "iremote.toggleAutoUpload",
+          "group": "4_settings@1"
+        },
+        {
+          "command": "iremote.browseRemoteHost",
+          "group": "4_settings@2"
+        },
+        {
+          "command": "iremote.openSettings",
+          "group": "4_settings@3"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "iremote.remote.switchServer",
+          "when": "view == iremote.remoteHost",
+          "group": "navigation@1"
+        },
+        {
+          "command": "iremote.remote.refresh",
+          "when": "view == iremote.remoteHost",
+          "group": "navigation@2"
+        },
+        {
+          "command": "iremote.remote.collapseAll",
+          "when": "view == iremote.remoteHost",
+          "group": "navigation@3"
+        },
+        {
+          "command": "iremote.openSettings",
+          "when": "view == iremote.remoteHost",
+          "group": "navigation@4"
+        },
+        {
+          "command": "iremote.disconnectAll",
+          "when": "view == iremote.remoteHost",
+          "group": "1_misc@1"
+        },
+        {
+          "command": "iremote.importPhpStorm",
+          "when": "view == iremote.remoteHost",
+          "group": "1_misc@2"
+        },
+        {
+          "command": "iremote.cancelTransfers",
+          "when": "view == iremote.transfers",
+          "group": "navigation@1"
+        },
+        {
+          "command": "iremote.clearTransfers",
+          "when": "view == iremote.transfers",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "iremote.remote.open",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-file/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "iremote.remote.openLocal",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-file.*mapped/",
+          "group": "1_open@2"
+        },
+        {
+          "command": "iremote.remote.newFile",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(dir|server)/",
+          "group": "2_new@1"
+        },
+        {
+          "command": "iremote.remote.newFolder",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(dir|server)/",
+          "group": "2_new@2"
+        },
+        {
+          "command": "iremote.remote.uploadHere",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(dir|server)/",
+          "group": "3_transfer@1"
+        },
+        {
+          "command": "iremote.remote.download",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(file|dir|server)/",
+          "group": "3_transfer@2"
+        },
+        {
+          "command": "iremote.remote.compareWithLocal",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-file.*mapped/",
+          "group": "4_compare@1"
+        },
+        {
+          "command": "iremote.remote.syncWithLocal",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(dir|server).*mapped/",
+          "group": "4_compare@2"
+        },
+        {
+          "command": "iremote.remote.rename",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(file|dir)/",
+          "group": "5_edit@1"
+        },
+        {
+          "command": "iremote.remote.delete",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(file|dir)/",
+          "group": "5_edit@2"
+        },
+        {
+          "command": "iremote.remote.chmod",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(file|dir).*chmod/",
+          "group": "5_edit@3"
+        },
+        {
+          "command": "iremote.remote.copyPath",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-/",
+          "group": "6_copy@1"
+        },
+        {
+          "command": "iremote.remote.copyWebUrl",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-.*web/",
+          "group": "6_copy@2"
+        },
+        {
+          "command": "iremote.remote.openInBrowser",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-.*web/",
+          "group": "6_copy@3"
+        },
+        {
+          "command": "iremote.remote.revealLocal",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-.*mapped/",
+          "group": "7_local@1"
+        },
+        {
+          "command": "iremote.remote.mountWorkspace",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(dir|server)/",
+          "group": "7_local@2"
+        },
+        {
+          "command": "iremote.remote.refresh",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(dir|server)/",
+          "group": "8_refresh@1"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "iremote.deployment",
+        "label": "Deployment"
+      }
+    ],
+    "configuration": {
+      "title": "iRemote",
+      "properties": {
+        "iremote.remoteHost.openBehavior": {
+          "type": "string",
+          "enum": [
+            "remote",
+            "localIfMapped"
+          ],
+          "enumDescriptions": [
+            "Open the file directly from the server; saving uploads it back.",
+            "Open the local mapped copy when one exists, otherwise edit the remote file."
+          ],
+          "default": "remote",
+          "description": "What happens when a file is opened from the Remote Host view."
+        },
+        "iremote.remoteHost.showHiddenFiles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show dot-files in the Remote Host view."
+        },
+        "iremote.connection.timeoutSeconds": {
+          "type": "number",
+          "default": 20,
+          "minimum": 3,
+          "description": "Connection and command timeout in seconds."
+        },
+        "iremote.connection.idleCloseSeconds": {
+          "type": "number",
+          "default": 300,
+          "minimum": 10,
+          "description": "Close idle connections after this many seconds."
+        },
+        "iremote.statusBar.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the default server and transfer status in the status bar."
+        },
+        "iremote.log.level": {
+          "type": "string",
+          "enum": [
+            "errors",
+            "brief",
+            "details"
+          ],
+          "default": "brief",
+          "description": "Amount of information written to the File Transfer log (PhpStorm: Operations logging)."
+        },
+        "iremote.ssh.knownHostsFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "machine-overridable",
+          "description": "Additional known_hosts files checked before asking to trust an SSH host key (like OpenSSH UserKnownHostsFile). ~/.ssh/known_hosts is always used."
+        }
+      }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": ".vscode/iremote.json",
+        "url": "./schemas/iremote.schema.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build -- --production",
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc -p . --noEmit && tsc -p webview --noEmit",
+    "lint": "eslint src webview test",
+    "test:unit": "node scripts/build-tests.mjs && node --test out-test/unit/",
+    "test:integration": "node scripts/build-tests.mjs && node --test --test-concurrency=1 out-test/integration/",
+    "test:servers:up": "node scripts/test-fixtures.mjs && docker compose -f test/docker-compose.yml up -d",
+    "test:servers:down": "docker compose -f test/docker-compose.yml down -v",
+    "test:e2e": "node scripts/build.mjs && node scripts/build-tests.mjs && vscode-test",
+    "test": "npm run typecheck && npm run test:unit",
+    "package": "vsce package --no-dependencies --allow-missing-repository"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.19.43",
+    "@types/ssh2": "^1.15.6",
+    "@types/vscode": "~1.90.0",
+    "@vscode/codicons": "^0.0.46-24",
+    "@vscode/test-cli": "^0.0.15",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/vsce": "^4.1.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.14.0",
+    "typescript": "~6.0",
+    "typescript-eslint": "^8.72.1"
+  },
+  "dependencies": {
+    "basic-ftp": "^6.2.5",
+    "fast-xml-parser": "^5.11.2",
+    "minimatch": "^11.0.4",
+    "ssh-config": "^5.3.0",
+    "ssh2": "^1.17.0",
+    "webdav": "^5.11.0"
+  }
+}

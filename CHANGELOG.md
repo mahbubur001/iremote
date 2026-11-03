@@ -1,0 +1,10 @@
+# Changelog
+
+## 1.0.0
+
+- Deployment servers: SFTP, FTP, FTPS (explicit/implicit), WebDAV, local or mounted folder.
+- PhpStorm-style Deployment settings (Connection / Mappings / Excluded Paths / Options) and PhpStorm import.
+- Automatic upload (Always / On explicit save / Never), skip external changes, delete and rename propagation.
+- Remote Host view with direct remote editing (`iremote://`), drag and drop, permissions, compare and sync.
+- Sync with Deployed dialog, Compare with Deployed Version, File Transfer view, status bar.
+- Keychain-backed credentials, known_hosts verification, TLS certificate pinning, SSH agent, ~/.ssh/config, jump hosts.
