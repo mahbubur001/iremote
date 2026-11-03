@@ -104,6 +104,19 @@ npm run test:servers:down
 npm run package          # produce iremote-<version>.vsix
 ```
 
+### Setting up on a new machine
+
+```bash
+git clone git@github.com:mahbubur001/iremote.git && cd iremote
+npm install
+npm run build
+npm run test:servers:up      # needs Docker Desktop running
+code examples/demo           # demo project wired to the local test servers (user tester / password pass)
+```
+
+Press F5 in the `iremote` folder to run the extension from source, or `npm run package` and
+`code --install-extension iremote-1.0.0.vsix` to install it.
+
 ### Architecture
 
 ```

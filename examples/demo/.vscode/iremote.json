@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "defaultServer": "local-ftp",
+  "options": {
+    "autoUpload": "onExplicitSave",
+    "warnOnNewerRemote": "timestampAndSize",
+    "excludeNames": [".git", ".idea", ".vscode", "node_modules", "*.log"]
+  },
+  "servers": [
+    {
+      "id": "local-ftp",
+      "name": "Local FTP (test)",
+      "type": "ftp",
+      "host": "127.0.0.1",
+      "port": 2121,
+      "username": "tester",
+      "rootPath": "/",
+      "mappings": [{ "local": "", "remote": "/demo", "web": "/" }]
+    },
+    {
+      "id": "local-ftps",
+      "name": "Local FTPS (test, self-signed)",
+      "type": "ftps",
+      "host": "127.0.0.1",
+      "port": 2121,
+      "username": "tester",
+      "rootPath": "/",
+      "allowUntrustedCertificate": true,
+      "mappings": [{ "local": "", "remote": "/demo-ftps", "web": "/" }]
+    },
+    {
+      "id": "local-sftp",
+      "name": "Local SFTP (test)",
+      "type": "sftp",
+      "host": "127.0.0.1",
+      "port": 2222,
+      "username": "tester",
+      "auth": "password",
+      "rootPath": "/upload",
+      "mappings": [{ "local": "", "remote": "/demo", "web": "/" }]
+    }
+  ]
+}
