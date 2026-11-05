@@ -48,7 +48,8 @@ export default defineConfig({
   files: 'out-test/e2e/**/*.test.js',
   workspaceFolder: workspace,
   // In-memory secret storage keeps the test instance away from the macOS keychain (no system dialogs).
-  launchArgs: ['--disable-extensions', '--disable-workspace-trust', '--use-inmemory-secretstorage'],
+  // Debug level so the iRemote protocol trace (iremote.log.level = details) reaches the log files kept by CI.
+  launchArgs: ['--disable-extensions', '--disable-workspace-trust', '--use-inmemory-secretstorage', '--log', 'radiustheme.iremote:debug'],
   env: { IREMOTE_E2E_REMOTE_ROOT: remoteRoot },
   mocha: { ui: 'bdd', timeout: 60000 },
 });
