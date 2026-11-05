@@ -1,6 +1,5 @@
 import { describe, test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { connect as netConnect } from 'node:net';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,28 +9,11 @@ import { FtpClient } from '../../src/protocol/FtpClient';
 import { WebDavClient } from '../../src/protocol/WebDavClient';
 import { LocalClient } from '../../src/protocol/LocalClient';
 import { RemoteError, type ConnectContext, type RemoteClient } from '../../src/protocol/types';
+import { waitForServer } from './servers';
 
 /**
  * Requires `npm run test:servers:up`. Every protocol implementation must satisfy the same contract.
  */
-
-const waitForPort = (port: number, timeoutMs = 60_000) =>
-  new Promise<void>((resolve, reject) => {
-    const start = Date.now();
-    const attempt = () => {
-      const s = netConnect(port, '127.0.0.1');
-      s.once('connect', () => {
-        s.destroy();
-        resolve();
-      });
-      s.once('error', () => {
-        s.destroy();
-        if (Date.now() - start > timeoutMs) reject(new Error(`port ${port} not reachable`));
-        else setTimeout(attempt, 500);
-      });
-    };
-    attempt();
-  });
 
 const ctx = (extra: Partial<ConnectContext> = {}): ConnectContext => ({
   timeoutMs: 20_000,
@@ -113,7 +95,7 @@ for (const c of cases) {
     const dir = `${c.base.replace(/\/$/, '')}/it-${randomBytes(4).toString('hex')}`;
 
     before(async () => {
-      if (c.port) await waitForPort(c.port);
+      if (c.port) await waitForServer(c.port);
       client = c.make();
       await client.connect();
     });
@@ -217,7 +199,7 @@ for (const c of cases) {
 
 describe('security', () => {
   test('SFTP refuses connection when the host key is rejected', async () => {
-    await waitForPort(2222);
+    await waitForServer(2222);
     const client = new SftpClient(
       { host: '127.0.0.1', port: 2222, username: 'tester', keepAliveSeconds: 0, useAgent: false, tryKeyboard: false },
       ctx({ verifyHostKey: async () => false }),
@@ -234,7 +216,7 @@ describe('security', () => {
   });
 
   test('FTPS rejects a self-signed certificate unless explicitly allowed', async () => {
-    await waitForPort(2121);
+    await waitForServer(2121);
     let asked = false;
     const client = new FtpClient(
       { host: '127.0.0.1', port: 2121, username: 'tester', tls: 'explicit', allowUntrustedCertificate: false },
@@ -258,7 +240,7 @@ describe('security', () => {
   });
 
   test('WebDAV wrong password is an Auth error', async () => {
-    await waitForPort(8080);
+    await waitForServer(8080);
     const client = new WebDavClient({ url: 'http://127.0.0.1:8080', username: 'tester', auth: 'basic', allowUntrustedCertificate: false }, ctx({ password: 'wrong' }));
     await assert.rejects(client.connect(), (e: unknown) => e instanceof RemoteError && e.code === 'Auth');
   });

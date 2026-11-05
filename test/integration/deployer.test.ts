@@ -14,18 +14,21 @@ import { Deployer, type ConflictInfo, type DeploymentTarget } from '../../src/co
 import { SyncEngine } from '../../src/core/SyncEngine';
 import { PathMapper } from '../../src/core/PathMapper';
 import { defaultOptions, type ServerConfig } from '../../src/config/schema';
+import { waitForServer } from './servers';
 
 const ctx: ConnectContext = { timeoutMs: 20_000, password: 'pass', verifyHostKey: async () => true, verifyCertificate: async () => true };
 
-const backends: { name: string; base: string; make: () => RemoteClient; type: ServerConfig['type'] }[] = [
+const backends: { name: string; port: number; base: string; make: () => RemoteClient; type: ServerConfig['type'] }[] = [
   {
     name: 'SFTP',
+    port: 2222,
     base: '/upload',
     type: 'sftp',
     make: () => new SftpClient({ host: '127.0.0.1', port: 2222, username: 'tester', keepAliveSeconds: 0, useAgent: false, tryKeyboard: false }, ctx),
   },
   {
     name: 'FTPS',
+    port: 2121,
     base: '/',
     type: 'ftps',
     make: () => new FtpClient({ host: '127.0.0.1', port: 2121, username: 'tester', tls: 'explicit', allowUntrustedCertificate: true }, ctx),
@@ -45,6 +48,7 @@ for (const b of backends) {
     let cache: StateCache;
 
     before(async () => {
+      await waitForServer(b.port);
       mkdirSync(join(project, 'src/lib'), { recursive: true });
       mkdirSync(join(project, '.git'), { recursive: true });
       mkdirSync(join(project, 'vendor'), { recursive: true });
