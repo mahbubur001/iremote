@@ -3,6 +3,7 @@
 ## 1.0.1
 
 - New extension and Activity Bar icons; the extension icon now has transparent corners (no white box on dark themes).
+- Security: WebDAV client now uses minimatch 11 (fixes GHSA-g3hv-75wg-m249, denial of service via glob patterns).
 
 ## 1.0.0
 
