@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.0.2
 
 - Fix: the Sync with Deployed dialog showed an empty Path column (file names and status badges were collapsed).
+- README: screenshots of the Deployment settings and Sync dialogs.
 
 ## 1.0.1
 
