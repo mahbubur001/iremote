@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.4
 
 - When `.vscode/iremote.json` is first created in a git repository, iRemote offers to add it to `.gitignore` (setting `iremote.git.offerToIgnoreConfig`).
 
