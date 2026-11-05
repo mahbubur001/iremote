@@ -12,6 +12,9 @@ updates:
       # Must match engines.vscode (^1.90.0); newer typings would allow APIs older VS Code builds lack.
       - dependency-name: '@types/vscode'
         update-types: [version-update:semver-major, version-update:semver-minor]
+      # typescript-eslint 8.x supports TypeScript < 7 only; lift this when it supports the next major.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
       # Tests and bundles target Node 20 APIs (esbuild target node20).
       - dependency-name: '@types/node'
         update-types: [version-update:semver-major]
