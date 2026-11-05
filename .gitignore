@@ -4,3 +4,4 @@ out-test/
 .vscode-test/
 *.vsix
 test/fixtures/
+.playwright-mcp/

@@ -4,6 +4,12 @@ PhpStorm-style deployment for VS Code. Configure SFTP, FTP, FTPS, WebDAV or loca
 upload on save, browse and edit files directly on the server, compare, and synchronize — with the same concepts and
 dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
 
+![Deployment settings: SFTP connection](docs/images/settings-connection.png)
+
+| Path mappings | Sync with Deployed |
+|---|---|
+| ![Mappings tab: local folders mapped to deployment and web paths](docs/images/settings-mappings.png) | ![Sync dialog: per-file status and direction](docs/images/sync.png) |
+
 ## Features
 
 | PhpStorm | iRemote |
