@@ -1,8 +1,8 @@
 {
   "name": "iremote",
-  "displayName": "iRemote \u2014 Deployment & Remote Host",
+  "displayName": "iRemote — Deployment & Remote Host",
   "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "publisher": "itemcoder",
   "license": "MIT",
   "repository": {
@@ -51,7 +51,7 @@
     "commands": [
       {
         "command": "iremote.openSettings",
-        "title": "Deployment Settings\u2026",
+        "title": "Deployment Settings…",
         "category": "iRemote",
         "icon": "$(gear)"
       },
@@ -63,7 +63,7 @@
       },
       {
         "command": "iremote.uploadTo",
-        "title": "Upload to\u2026",
+        "title": "Upload to…",
         "category": "iRemote"
       },
       {
@@ -74,12 +74,12 @@
       },
       {
         "command": "iremote.downloadFrom",
-        "title": "Download from\u2026",
+        "title": "Download from…",
         "category": "iRemote"
       },
       {
         "command": "iremote.syncWithDeployed",
-        "title": "Sync with Deployed to\u2026",
+        "title": "Sync with Deployed to…",
         "category": "iRemote",
         "icon": "$(sync)"
       },
@@ -91,7 +91,7 @@
       },
       {
         "command": "iremote.compareWithDeployedOn",
-        "title": "Compare with Deployed Version on\u2026",
+        "title": "Compare with Deployed Version on…",
         "category": "iRemote"
       },
       {
@@ -101,7 +101,7 @@
       },
       {
         "command": "iremote.setDefaultServer",
-        "title": "Set Default Server\u2026",
+        "title": "Set Default Server…",
         "category": "iRemote"
       },
       {
@@ -145,12 +145,12 @@
       },
       {
         "command": "iremote.forgetCredentials",
-        "title": "Forget Saved Credentials\u2026",
+        "title": "Forget Saved Credentials…",
         "category": "iRemote"
       },
       {
         "command": "iremote.remote.switchServer",
-        "title": "Choose Server\u2026",
+        "title": "Choose Server…",
         "category": "iRemote",
         "icon": "$(server)"
       },
@@ -179,19 +179,19 @@
       },
       {
         "command": "iremote.remote.newFile",
-        "title": "New File\u2026",
+        "title": "New File…",
         "category": "iRemote",
         "icon": "$(new-file)"
       },
       {
         "command": "iremote.remote.newFolder",
-        "title": "New Folder\u2026",
+        "title": "New Folder…",
         "category": "iRemote",
         "icon": "$(new-folder)"
       },
       {
         "command": "iremote.remote.rename",
-        "title": "Rename\u2026",
+        "title": "Rename…",
         "category": "iRemote"
       },
       {
@@ -207,7 +207,7 @@
       },
       {
         "command": "iremote.remote.uploadHere",
-        "title": "Upload Here\u2026",
+        "title": "Upload Here…",
         "category": "iRemote",
         "icon": "$(cloud-upload)"
       },
@@ -218,7 +218,7 @@
       },
       {
         "command": "iremote.remote.syncWithLocal",
-        "title": "Sync with Local\u2026",
+        "title": "Sync with Local…",
         "category": "iRemote"
       },
       {
@@ -233,7 +233,7 @@
       },
       {
         "command": "iremote.remote.chmod",
-        "title": "Change Permissions\u2026",
+        "title": "Change Permissions…",
         "category": "iRemote"
       },
       {

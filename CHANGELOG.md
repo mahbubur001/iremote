@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+- New extension and Activity Bar icons; the extension icon now has transparent corners (no white box on dark themes).
+
 ## 1.0.0
 
 - Deployment servers: SFTP, FTP, FTPS (explicit/implicit), WebDAV, local or mounted folder.
