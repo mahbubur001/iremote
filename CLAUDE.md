@@ -34,6 +34,8 @@ Keep `node --test` arguments as quoted globs, not directories: Node 22 (used in 
 `test:servers:up` also generates the throw-away SSH key in `test/fixtures/` (git-ignored). `examples/demo` is a project
 wired to these containers. CI (`.github/workflows/ci.yml`) runs typecheck/lint/unit/package on Linux, Windows and macOS,
 and integration + e2e (under `xvfb-run`) on Linux; on e2e failure the VS Code logs are uploaded as an artifact.
+Releases: pushing a `v<version>` tag runs `.github/workflows/release.yml` (Marketplace via `vsce publish --oidc`,
+Open VSX via the `OVSX_PAT` secret, GitHub Release). The extension id is `itemcoder.iremote`.
 
 ## Architecture
 

@@ -27,13 +27,13 @@ const readRemote = async (p: string) => new TextDecoder().decode(await vscode.wo
 
 describe('iRemote end-to-end', () => {
   before(async () => {
-    const ext = vscode.extensions.getExtension('ItemCoder.iremote');
+    const ext = vscode.extensions.getExtension('itemcoder.iremote');
     assert.ok(ext, 'extension is installed');
     await ext.activate();
   });
 
   it('registers every contributed command', async () => {
-    const pkg = JSON.parse(readFileSync(`${vscode.extensions.getExtension('ItemCoder.iremote')!.extensionPath}/package.json`, 'utf8'));
+    const pkg = JSON.parse(readFileSync(`${vscode.extensions.getExtension('itemcoder.iremote')!.extensionPath}/package.json`, 'utf8'));
     const contributed: string[] = pkg.contributes.commands.map((c: { command: string }) => c.command);
     const registered = new Set(await vscode.commands.getCommands(true));
     const missing = contributed.filter((c) => !registered.has(c));

@@ -59,3 +59,19 @@ because Docker accepts the port before the server inside the container is ready.
   artifact.
 - **integration** — Docker servers, integration tests and e2e tests (`xvfb-run`) on Linux. On failure the server logs
   are printed and the VS Code logs (including the iRemote debug trace) are uploaded as the `e2e-vscode-logs` artifact.
+
+## Releasing
+
+`.github/workflows/release.yml` runs when a `v*` tag is pushed. It checks that the tag matches `package.json`
+`version`, runs the tests, packages the `.vsix`, and then:
+
+- publishes to the **Visual Studio Marketplace** with Trusted Publishing (`vsce publish --oidc`) — no token is stored.
+  The `itemcoder` publisher needs a Trusted Publishing policy for repository `mahbubur001/iremote`, workflow
+  `release.yml`, no environment;
+- publishes to **Open VSX** when the `OVSX_PAT` repository secret is set (skipped with a warning otherwise);
+- creates a GitHub Release with the `.vsix` attached.
+
+```bash
+# bump "version" in package.json and add a CHANGELOG.md entry, commit, then:
+git tag v1.0.1 && git push origin v1.0.1
+```
