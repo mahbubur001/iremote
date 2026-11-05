@@ -187,7 +187,7 @@ const table = (): HTMLElement => {
             on: { click: (e) => onRowClick(e as MouseEvent, i, list), dblclick: () => post({ type: 'diff', id: i.id }) },
           },
           h('td', { class: 'chk' }, h('input', { type: 'checkbox', checked: selected.has(i.id), on: { click: (e) => e.stopPropagation(), change: () => (selected.has(i.id) ? selected.delete(i.id) : selected.add(i.id), render()) } })),
-          h('td', { class: 'path' }, h('span', { class: `badge state-${i.state}` }, STATE_LABELS[i.state]), h('span', { class: 'rel' }, i.rel)),
+          h('td', { class: 'path' }, h('div', { class: 'path-cell' }, h('span', { class: `badge state-${i.state}` }, STATE_LABELS[i.state]), h('span', { class: 'rel' }, i.rel))),
           h(
             'td',
             { class: 'side' },

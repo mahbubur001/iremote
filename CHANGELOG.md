@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix: the Sync with Deployed dialog showed an empty Path column (file names and status badges were collapsed).
+
 ## 1.0.1
 
 - New extension and Activity Bar icons; the extension icon now has transparent corners (no white box on dark themes).
