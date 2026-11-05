@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an improvement or a missing PhpStorm deployment feature
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What do you want to do?
+      description: The workflow or problem, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: phpstorm
+    attributes:
+      label: How does PhpStorm (or another tool) handle it?
+      description: Optional. Screenshots of the PhpStorm setting or dialog help a lot.
+  - type: dropdown
+    id: server-type
+    attributes:
+      label: Server types this applies to
+      multiple: true
+      options:
+        - All
+        - SFTP
+        - FTP / FTPS
+        - WebDAV
+        - Local or mounted folder

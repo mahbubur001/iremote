@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in iRemote doesn't work as expected
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: iRemote version
+      description: Extensions view → iRemote, or `code --list-extensions --show-versions | grep iremote`
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: vscode
+    attributes:
+      label: VS Code version and OS
+      placeholder: VS Code 1.145, macOS 15 (arm64)
+    validations:
+      required: true
+  - type: dropdown
+    id: server-type
+    attributes:
+      label: Server type
+      options:
+        - SFTP
+        - FTP
+        - FTPS (explicit)
+        - FTPS (implicit)
+        - WebDAV
+        - Local or mounted folder
+    validations:
+      required: true
+  - type: input
+    id: server-software
+    attributes:
+      label: Server software (if known)
+      placeholder: OpenSSH 9.6, ProFTPD, vsftpd, Pure-FTPd, IIS, Nextcloud, shared hosting provider…
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Configure a server with mapping …
+        2. Save a file …
+    validations:
+      required: true
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: Expected and actual behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: iRemote log
+      description: |
+        Set `iremote.log.level` to `details`, reproduce, then copy the **iRemote** output channel.
+        Remove host names, user names and paths you don't want to share. Passwords are never logged.
+      render: text
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant part of .vscode/iremote.json
+      description: Optional. Contains no passwords, but redact host names if needed.
+      render: json

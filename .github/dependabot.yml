@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # One PR for routine updates; majors still get their own PR.
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Must match engines.vscode (^1.90.0); newer typings would allow APIs older VS Code builds lack.
+      - dependency-name: '@types/vscode'
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      # Tests and bundles target Node 20 APIs (esbuild target node20).
+      - dependency-name: '@types/node'
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
