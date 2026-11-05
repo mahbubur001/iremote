@@ -2,12 +2,15 @@ import * as vscode from 'vscode';
 import { posix } from 'node:path';
 import { RemoteError, isRemoteError, type RemoteClient, type RemoteStat } from '../protocol/types';
 import type { ServerManager } from '../core/ServerManager';
+import { sha1Buffer } from '../core/Deployer';
 import type { ConfigStore } from '../config/ConfigStore';
 import { parseRemoteUri, SCHEME } from './uri';
 
 interface Version {
   mtime: number;
   size: number;
+  /** SHA-1 of the content, to tell real edits from metadata-only changes (e.g. a timestamp set after an upload). */
+  sha1: string;
 }
 
 const STAT_TTL_MS = 3000;
@@ -112,7 +115,7 @@ export class RemoteFileSystemProvider implements vscode.FileSystemProvider, vsco
       if (st.type === 'dir') throw vscode.FileSystemError.FileIsADirectory(uri);
       return { data: await c.readFile(path), st };
     });
-    this.versions.set(uri.toString(), { mtime: st.mtime, size: st.size });
+    this.versions.set(uri.toString(), { mtime: st.mtime, size: st.size, sha1: sha1Buffer(data) });
     this.statCache.set(uri.toString(), { stat: st, at: Date.now() });
     return data;
   }
@@ -120,6 +123,22 @@ export class RemoteFileSystemProvider implements vscode.FileSystemProvider, vsco
   /** The remote version last loaded into an editor, if any. */
   knownVersion(uri: vscode.Uri): Version | undefined {
     return this.versions.get(uri.toString());
+  }
+
+  /**
+   * Whether the remote file (currently `st`) has different content than the version last read or written.
+   * Same size but another mtime is confirmed by comparing content: the mtime can change without an edit, e.g. when an
+   * upload sets the timestamp right after a read saw the new content.
+   */
+  async changedSince(uri: vscode.Uri, st: RemoteStat): Promise<boolean> {
+    const key = uri.toString();
+    const known = this.versions.get(key);
+    if (!known || st.mtime <= 0 || (st.mtime === known.mtime && st.size === known.size)) return false;
+    if (st.size !== known.size) return true;
+    const data = await this.run(uri, (c) => c.readFile(parseRemoteUri(uri).path));
+    if (sha1Buffer(data) !== known.sha1) return true;
+    this.versions.set(key, { ...known, mtime: st.mtime });
+    return false;
   }
 
   async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean }): Promise<void> {
@@ -130,8 +149,7 @@ export class RemoteFileSystemProvider implements vscode.FileSystemProvider, vsco
     if (!existing && !options.create) throw vscode.FileSystemError.FileNotFound(uri);
     if (existing && options.create && !options.overwrite) throw vscode.FileSystemError.FileExists(uri);
 
-    const known = this.versions.get(uri.toString());
-    if (existing && known && existing.mtime > 0 && (existing.mtime !== known.mtime || existing.size !== known.size)) {
+    if (existing && (await this.changedSince(uri, existing))) {
       const choice = await vscode.window.showWarningMessage(
         `"${posix.basename(path)}" was changed on ${server.name} after you opened it.`,
         { modal: true, detail: 'Saving will overwrite the changes made on the server.' },
@@ -147,7 +165,7 @@ export class RemoteFileSystemProvider implements vscode.FileSystemProvider, vsco
       if (!existing && mode !== undefined && c.capabilities.chmod) await c.chmod(path, mode).catch(() => undefined);
       return c.stat(path);
     });
-    if (st) this.versions.set(uri.toString(), { mtime: st.mtime, size: st.size });
+    if (st) this.versions.set(uri.toString(), { mtime: st.mtime, size: st.size, sha1: sha1Buffer(Buffer.from(content)) });
     this.invalidate(uri);
     this.emitter.fire([{ type: existing ? vscode.FileChangeType.Changed : vscode.FileChangeType.Created, uri }]);
   }

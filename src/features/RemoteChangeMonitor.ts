@@ -54,7 +54,7 @@ export class RemoteChangeMonitor implements vscode.Disposable {
       try {
         const st = await this.servers.poolById(serverId).use((c) => c.stat(path));
         if (!st) continue;
-        if (st.mtime === known.mtime && st.size === known.size) {
+        if (!(await this.provider.changedSince(doc.uri, st))) {
           this.warned.delete(key);
           continue;
         }
