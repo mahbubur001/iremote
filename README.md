@@ -87,6 +87,12 @@ Settings are stored in `.vscode/iremote.json` (validated by a JSON schema). Exam
 | `iremote.statusBar.enabled` | `true` | Default server and transfer status in the status bar. |
 | `iremote.log.level` | `brief` | `errors`, `brief` or `details` (protocol trace) in the *iRemote* output channel. |
 
+## Documentation
+
+- [Configuration reference](https://github.com/mahbubur001/iremote/blob/main/docs/configuration.md) — every option in `.vscode/iremote.json`
+- [Architecture](https://github.com/mahbubur001/iremote/blob/main/docs/architecture.md) — how the extension is put together
+- [Development](https://github.com/mahbubur001/iremote/blob/main/docs/development.md) — building, test servers, CI
+
 ## Development
 
 ```bash
