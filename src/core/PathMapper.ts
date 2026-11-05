@@ -1,4 +1,4 @@
-import { posix, isAbsolute, normalize, resolve as resolvePath } from 'node:path';
+import { posix, win32 } from 'node:path';
 import { minimatch } from 'minimatch';
 import type { Mapping } from '../config/schema';
 
@@ -43,6 +43,7 @@ export class PathMapper {
   private readonly excludedLocal: string[];
   private readonly excludedRemote: string[];
   private readonly caseInsensitive: boolean;
+  private readonly localPath: typeof posix;
 
   constructor(
     private readonly projectRoot: string,
@@ -51,8 +52,9 @@ export class PathMapper {
     platform: NodeJS.Platform = process.platform,
   ) {
     this.caseInsensitive = platform === 'win32';
+    this.localPath = platform === 'win32' ? win32 : posix;
     const root = toSlash(projectRoot);
-    const localAbs = (p: string) => toSlash(!p || p === '.' ? root : isAbsolute(p) ? p : resolvePath(projectRoot, p));
+    const localAbs = (p: string) => toSlash(!p || p === '.' ? root : this.localPath.isAbsolute(p) ? p : this.localPath.resolve(projectRoot, p));
     this.mappings = server.mappings
       .filter((m) => m.remote !== undefined && m.remote !== null)
       .map((m) => ({
@@ -107,7 +109,7 @@ export class PathMapper {
   toLocal(remotePath: string): string | undefined {
     const hit = this.matchRemote(remotePath);
     if (!hit) return undefined;
-    return normalize(hit.rel ? `${hit.m.local}/${hit.rel}` : hit.m.local);
+    return this.localPath.normalize(hit.rel ? `${hit.m.local}/${hit.rel}` : hit.m.local);
   }
 
   /** Web URL for a local or remote path, when the server has a web URL. */

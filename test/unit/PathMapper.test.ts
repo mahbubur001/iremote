@@ -12,14 +12,14 @@ const server = (over: Partial<ConstructorParameters<typeof PathMapper>[1]> = {})
 });
 
 test('maps project files to the deployment path under the root', () => {
-  const m = new PathMapper('/proj', server(), []);
+  const m = new PathMapper('/proj', server(), [], 'linux');
   assert.equal(m.toRemote('/proj/index.php'), '/var/www/html/index.php');
   assert.equal(m.toRemote('/proj'), '/var/www/html');
   assert.equal(m.toRemote('/other/file'), undefined);
 });
 
 test('reverse mapping returns the local path', () => {
-  const m = new PathMapper('/proj', server(), []);
+  const m = new PathMapper('/proj', server(), [], 'linux');
   assert.equal(m.toLocal('/var/www/html/a/b.txt'), '/proj/a/b.txt');
   assert.equal(m.toLocal('/var/www/html'), '/proj');
   assert.equal(m.toLocal('/var/www/other'), undefined);
@@ -36,6 +36,7 @@ test('the longest local mapping wins', () => {
       ],
     }),
     [],
+    'linux',
   );
   assert.equal(m.toRemote('/proj/public/assets/app.js'), '/var/www/cdn/app.js');
   assert.equal(m.toRemote('/proj/public/index.php'), '/var/www/html/public/index.php');
@@ -43,7 +44,7 @@ test('the longest local mapping wins', () => {
 });
 
 test('excluded names match any segment and wildcards', () => {
-  const m = new PathMapper('/proj', server(), ['.git', '*.log', 'node_modules']);
+  const m = new PathMapper('/proj', server(), ['.git', '*.log', 'node_modules'], 'linux');
   assert.ok(m.isLocalExcluded('/proj/.git/config'));
   assert.ok(m.isLocalExcluded('/proj/storage/app.log'));
   assert.ok(m.isLocalExcluded('/proj/a/node_modules/x/index.js'));
@@ -54,7 +55,7 @@ test('excluded names match any segment and wildcards', () => {
 });
 
 test('excluded local and remote paths', () => {
-  const m = new PathMapper('/proj', server({ excludedLocal: ['vendor'], excludedRemote: ['/var/www/html/uploads'] }), []);
+  const m = new PathMapper('/proj', server({ excludedLocal: ['vendor'], excludedRemote: ['/var/www/html/uploads'] }), [], 'linux');
   assert.ok(m.isLocalExcluded('/proj/vendor/autoload.php'));
   assert.ok(!m.isLocalExcluded('/proj/vendors.txt'));
   assert.ok(m.isRemoteExcluded('/var/www/html/uploads/a.png'));
@@ -62,13 +63,13 @@ test('excluded local and remote paths', () => {
 });
 
 test('web URLs combine web path and relative path with encoding', () => {
-  const m = new PathMapper('/proj', server({ mappings: [{ local: '', remote: '/html', web: '/app' }] }), []);
+  const m = new PathMapper('/proj', server({ mappings: [{ local: '', remote: '/html', web: '/app' }] }), [], 'linux');
   assert.equal(m.webUrlForLocal('/proj/a b/index.php'), 'https://example.com/app/a%20b/index.php');
-  assert.equal(new PathMapper('/proj', server({ webUrl: '' }), []).webUrlForLocal('/proj/x'), undefined);
+  assert.equal(new PathMapper('/proj', server({ webUrl: '' }), [], 'linux').webUrlForLocal('/proj/x'), undefined);
 });
 
 test('root path "/" and deployment path "/" map to the server root', () => {
-  const m = new PathMapper('/proj', server({ rootPath: '/', mappings: [{ local: '', remote: '/', web: '/' }] }), []);
+  const m = new PathMapper('/proj', server({ rootPath: '/', mappings: [{ local: '', remote: '/', web: '/' }] }), [], 'linux');
   assert.equal(m.toRemote('/proj/x.php'), '/x.php');
   assert.equal(m.toLocal('/x.php'), '/proj/x.php');
 });
@@ -76,6 +77,18 @@ test('root path "/" and deployment path "/" map to the server root', () => {
 test('windows paths are matched case-insensitively', () => {
   const m = new PathMapper('C:\\Proj', server(), [], 'win32');
   assert.equal(m.toRemote('c:\\proj\\Index.php'), '/var/www/html/Index.php');
+});
+
+test('windows relative mappings and excludes resolve against the project root on any host', () => {
+  const m = new PathMapper(
+    'C:\\Proj',
+    server({ mappings: [{ local: 'public\\assets', remote: '/cdn', web: '/' }], excludedLocal: ['vendor'] }),
+    [],
+    'win32',
+  );
+  assert.equal(m.toRemote('C:\\Proj\\public\\assets\\app.js'), '/var/www/cdn/app.js');
+  assert.equal(m.toLocal('/var/www/cdn/a/b.js'), 'C:\\Proj\\public\\assets\\a\\b.js');
+  assert.ok(m.isLocalExcluded('c:\\proj\\vendor\\autoload.php'));
 });
 
 test('toSlash normalizes separators and trailing slashes', () => {

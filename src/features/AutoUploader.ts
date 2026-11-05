@@ -58,6 +58,8 @@ export class AutoUploader implements vscode.Disposable {
     const reason = this.saveReasons.get(key) ?? vscode.TextDocumentSaveReason.Manual;
     this.saveReasons.delete(key);
     this.editorSaves.set(doc.uri.fsPath, Date.now());
+    // A watcher event queued before this save (e.g. the file was just written) would upload it a second time.
+    this.cancelPendingWatch(doc.uri.fsPath);
     const hit = this.targetFor(doc.uri);
     if (!hit) return;
     if (hit.project.config.options.autoUpload === 'onExplicitSave' && reason !== vscode.TextDocumentSaveReason.Manual) return;
@@ -173,6 +175,13 @@ export class AutoUploader implements vscode.Disposable {
       this.watchers.push(w);
     }
     this.statusEmitter.fire();
+  }
+
+  private cancelPendingWatch(path: string): void {
+    const pending = this.pendingWatch.get(path);
+    if (!pending) return;
+    clearTimeout(pending);
+    this.pendingWatch.delete(path);
   }
 
   private onExternal(uri: vscode.Uri): void {
