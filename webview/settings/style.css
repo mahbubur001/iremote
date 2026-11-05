@@ -487,6 +487,11 @@ h3 {
   background: var(--vscode-list-hoverBackground);
 }
 
+.remote-list li.dir.selected {
+  color: var(--vscode-list-activeSelectionForeground);
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
 .remote-list li.file {
   color: var(--vscode-descriptionForeground);
 }

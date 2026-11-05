@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix: the remote folder picker now highlights a folder on click and **Select** uses it (it used to return the folder you were in). Double-click or Enter opens a folder; arrow keys move the selection.
+
 ## 1.0.2
 
 - Fix: the Sync with Deployed dialog showed an empty Path column (file names and status badges were collapsed).

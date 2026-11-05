@@ -157,13 +157,55 @@ const browseRemote = (server: UiServer, startPath: string): Promise<string | und
     const list = h('ul', { class: 'remote-list', role: 'listbox' });
     const pathInput = h('input', { type: 'text', value: current, spellcheck: 'false' });
     const message = h('div', { class: 'modal-message' });
+    /** Folder highlighted with a single click; "Select" returns it, or the open folder when nothing is highlighted. */
+    let selected: string | undefined;
     const close = (result?: string) => {
       overlay.remove();
       resolve(result);
     };
+    const select = (li: HTMLElement, path: string | undefined) => {
+      for (const other of list.querySelectorAll('li.selected')) {
+        other.classList.remove('selected');
+        other.setAttribute('aria-selected', 'false');
+      }
+      li.classList.add('selected');
+      li.setAttribute('aria-selected', 'true');
+      li.focus();
+      li.scrollIntoView({ block: 'nearest' });
+      selected = path;
+      pathInput.value = path ?? current;
+    };
+    // Click selects, double-click / Enter opens, arrow keys move between folders.
+    const folderItem = (label: string, iconName: string, target: string, selectable: boolean): HTMLElement => {
+      const li: HTMLElement = h(
+        'li',
+        {
+          class: 'dir',
+          role: 'option',
+          'aria-selected': 'false',
+          tabindex: '0',
+          on: {
+            click: () => select(li, selectable ? target : undefined),
+            dblclick: () => void load(target),
+            keydown: (e) => {
+              const key = (e as KeyboardEvent).key;
+              if (key === 'Enter') return void load(target);
+              if (key !== 'ArrowDown' && key !== 'ArrowUp') return;
+              e.preventDefault();
+              const dirs = [...list.querySelectorAll<HTMLElement>('li.dir')];
+              dirs[dirs.indexOf(li) + (key === 'ArrowDown' ? 1 : -1)]?.click();
+            },
+          },
+        },
+        icon(iconName),
+        label,
+      );
+      return li;
+    };
     const load = async (path: string) => {
       message.textContent = 'Loading…';
       list.replaceChildren();
+      selected = undefined;
       const r = await request({ type: 'browseRemote', projectKey: activeKey, server, secret: secretChanges[server.id], path });
       if (!r.ok) {
         message.textContent = r.message ?? 'Cannot list directory.';
@@ -174,16 +216,9 @@ const browseRemote = (server: UiServer, startPath: string): Promise<string | und
       message.textContent = '';
       const parent = current.replace(/\/+[^/]+\/?$/, '') || '/';
       const items: HTMLElement[] = [];
-      if (current !== '/') items.push(h('li', { class: 'dir', tabindex: '0', on: { dblclick: () => void load(parent), keydown: (e) => (e as KeyboardEvent).key === 'Enter' && void load(parent) } }, icon('arrow-up'), '..'));
+      if (current !== '/') items.push(folderItem('..', 'arrow-up', parent, false));
       for (const e of r.entries ?? []) {
-        if (!e.isDir) {
-          items.push(h('li', { class: 'file' }, icon('file'), e.name));
-          continue;
-        }
-        const target = `${current.replace(/\/$/, '')}/${e.name}`;
-        items.push(
-          h('li', { class: 'dir', tabindex: '0', on: { dblclick: () => void load(target), keydown: (ev) => (ev as KeyboardEvent).key === 'Enter' && void load(target) } }, icon('folder'), e.name),
-        );
+        items.push(e.isDir ? folderItem(e.name, 'folder', `${current.replace(/\/$/, '')}/${e.name}`, true) : h('li', { class: 'file' }, icon('file'), e.name));
       }
       list.replaceChildren(...items);
     };
@@ -197,7 +232,7 @@ const browseRemote = (server: UiServer, startPath: string): Promise<string | und
         h('div', { class: 'input-with-button' }, pathInput, iconButton('arrow-right', 'Go', () => void load(pathInput.value))),
         list,
         message,
-        h('div', { class: 'modal-buttons' }, button('Cancel', () => close()), button('Select', () => close(current), { primary: true })),
+        h('div', { class: 'modal-buttons' }, button('Cancel', () => close()), button('Select', () => close(selected ?? current), { primary: true })),
       ),
     );
     document.body.append(overlay);
