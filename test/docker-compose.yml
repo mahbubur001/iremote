@@ -23,11 +23,12 @@ services:
 
   vsftpd:
     image: delfer/alpine-ftp-server
+    # Run vsftpd in the foreground: the image's default start backgrounds it and guesses the pid with pgrep,
+    # which sometimes picks the exiting parent and stops the container ("process has died, quitting").
+    # Options after the config file override it.
+    command: vsftpd /etc/vsftpd/vsftpd.conf -obackground=NO -opasv_min_port=31000 -opasv_max_port=31009 -opasv_address=127.0.0.1
     environment:
       USERS: "tester|pass|/home/tester"
-      ADDRESS: 127.0.0.1
-      MIN_PORT: "31000"
-      MAX_PORT: "31009"
     ports:
       - "2122:21"
       - "31000-31009:31000-31009"
