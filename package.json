@@ -3,8 +3,16 @@
   "displayName": "iRemote \u2014 Deployment & Remote Host",
   "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
   "version": "1.0.0",
-  "publisher": "radiustheme",
+  "publisher": "ItemCoder",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mahbubur001/iremote.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mahbubur001/iremote/issues"
+  },
+  "homepage": "https://github.com/mahbubur001/iremote#readme",
   "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.90.0"
@@ -649,7 +657,7 @@
     "test:servers:down": "docker compose -f test/docker-compose.yml down -v",
     "test:e2e": "node scripts/build.mjs && node scripts/build-tests.mjs && vscode-test",
     "test": "npm run typecheck && npm run test:unit",
-    "package": "vsce package --no-dependencies --allow-missing-repository"
+    "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
