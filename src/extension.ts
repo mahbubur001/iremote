@@ -15,6 +15,7 @@ import { StatusBar } from './views/StatusBar';
 import { Decorations } from './views/Decorations';
 import { AutoUploader } from './features/AutoUploader';
 import { RemoteChangeMonitor } from './features/RemoteChangeMonitor';
+import { GitIgnoreOffer } from './features/GitIgnoreOffer';
 import { registerDeploymentCommands } from './commands/deployment';
 import { registerRemoteCommands } from './commands/remote';
 import { RemoteError } from './protocol/types';
@@ -100,6 +101,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     new Decorations(config),
     new AutoUploader(config, deployer),
     new RemoteChangeMonitor(config, servers, fsProvider),
+    new GitIgnoreOffer(config, context.workspaceState),
     ...registerDeploymentCommands(services),
     ...registerRemoteCommands(services),
     config.onDidChange(() => reportProblems(config)),

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- When `.vscode/iremote.json` is first created in a git repository, iRemote offers to add it to `.gitignore` (setting `iremote.git.offerToIgnoreConfig`).
+
 ## 1.0.3
 
 - Fix: the remote folder picker now highlights a folder on click and **Select** uses it (it used to return the folder you were in). Double-click or Enter opens a folder; arrow keys move the selection.

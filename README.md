@@ -92,6 +92,7 @@ Settings are stored in `.vscode/iremote.json` (validated by a JSON schema). Exam
 | `iremote.connection.idleCloseSeconds` | `300` | Close idle connections after this time. |
 | `iremote.statusBar.enabled` | `true` | Default server and transfer status in the status bar. |
 | `iremote.log.level` | `brief` | `errors`, `brief` or `details` (protocol trace) in the *iRemote* output channel. |
+| `iremote.git.offerToIgnoreConfig` | `true` | When `.vscode/iremote.json` is first created in a git repository, offer to add it to `.gitignore`. |
 
 ## Documentation
 

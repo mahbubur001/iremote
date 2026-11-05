@@ -29,6 +29,7 @@ export class ConfigStore implements vscode.Disposable {
   private global: GlobalConfigFile = { version: 1, servers: [] };
   private globalErrors: string[] = [];
   private readonly emitter = new vscode.EventEmitter<void>();
+  private readonly createdEmitter = new vscode.EventEmitter<Project>();
   private readonly disposables: vscode.Disposable[] = [];
   private watchers: vscode.Disposable[] = [];
   private reloadTimer?: NodeJS.Timeout;
@@ -36,10 +37,13 @@ export class ConfigStore implements vscode.Disposable {
   private readonly mappers = new Map<string, PathMapper>();
 
   readonly onDidChange = this.emitter.event;
+  /** Fires when saving creates a project's .vscode/iremote.json for the first time. */
+  readonly onDidCreateProjectConfig = this.createdEmitter.event;
 
   constructor(private readonly context: vscode.ExtensionContext) {
     this.disposables.push(
       this.emitter,
+      this.createdEmitter,
       vscode.workspace.onDidChangeWorkspaceFolders(() => void this.reload()),
     );
   }
@@ -186,8 +190,10 @@ export class ConfigStore implements vscode.Disposable {
     if (clean.defaultServer && !clean.servers.some((s) => s.id === clean.defaultServer) && !globalIds.has(clean.defaultServer)) {
       clean.defaultServer = undefined;
     }
+    const created = !(await fs.stat(project.configUri.fsPath).then(() => true, () => false));
     await this.writeJson(project.configUri, toJson(clean));
     await this.reload();
+    if (created) this.createdEmitter.fire(this._projects.find((p) => p.root === project.root) ?? project);
   }
 
   async saveGlobal(config: GlobalConfigFile): Promise<void> {

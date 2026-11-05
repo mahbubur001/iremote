@@ -635,6 +635,11 @@
           "default": [],
           "scope": "machine-overridable",
           "description": "Additional known_hosts files checked before asking to trust an SSH host key (like OpenSSH UserKnownHostsFile). ~/.ssh/known_hosts is always used."
+        },
+        "iremote.git.offerToIgnoreConfig": {
+          "type": "boolean",
+          "default": true,
+          "description": "When iRemote creates .vscode/iremote.json inside a git repository, offer to add it to .gitignore."
         }
       }
     },

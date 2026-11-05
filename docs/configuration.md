@@ -92,6 +92,22 @@ When several mappings match a file, the longest local path wins. Example: with `
 `{ "local": "", "remote": "/html" }` and `{ "local": "public/assets", "remote": "/cdn" }`, `public/assets/app.js`
 deploys to `/var/www/cdn/app.js` and `public/index.php` to `/var/www/html/public/index.php`.
 
+## Version control
+
+`.vscode/iremote.json` is the counterpart of PhpStorm's `.idea/deployment.xml`: it holds mappings, excluded paths, the
+default server and project-only servers (host, user, paths) — never passwords. Shared servers live outside the project,
+in VS Code's global storage, like PhpStorm's IDE-level `options/webServers.xml`.
+
+- **Commit it** to give a team the same deployment setup.
+- **Ignore it** for personal setups or public repositories (host names and user names are visible in the file).
+
+When iRemote creates the file inside a git repository that neither tracks nor ignores it, it asks once whether to add
+it to `.gitignore` (an entry anchored to the repository root, e.g. `/.vscode/iremote.json`). Turn this off with
+`iremote.git.offerToIgnoreConfig`. To ignore it in every repository, add `.vscode/iremote.json` to your global
+gitignore (`git config --global core.excludesFile`).
+
+The file is never uploaded: `.vscode` is in the default *Exclude items by name* list.
+
 ## VS Code settings
 
 User/workspace settings (not in `iremote.json`) are listed in the [README](../README.md#settings).
