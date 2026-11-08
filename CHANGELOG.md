@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.3
+
+- Deployment Settings opens in its own floating window, like PhpStorm's Deployment dialog; OK / Cancel close it.
+  Setting `iremote.settings.openIn` (`window` / `editor`) keeps the old editor tab if you prefer it.
+
 ## 1.1.2
 
 - Start SSH Session lists only your iRemote SFTP servers (marked *project* or *global*), `~/.ssh/config` hosts and

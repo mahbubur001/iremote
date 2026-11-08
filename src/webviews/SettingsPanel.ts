@@ -43,6 +43,18 @@ export class SettingsPanel {
       localResourceRoots: [vscode.Uri.joinPath(s.context.extensionUri, 'dist', 'webview')],
     });
     SettingsPanel.current = new SettingsPanel(s, panel, serverId);
+    if (vscode.workspace.getConfiguration('iremote').get<string>('settings.openIn', 'window') === 'window') void SettingsPanel.float(panel);
+  }
+
+  /**
+   * PhpStorm shows Deployment as a dialog. Extensions cannot open modal windows, so the panel moves into its own
+   * floating window (it closes with OK / Cancel, as its only editor). The webview reloads on the move and re-sends
+   * "ready", which re-initializes it. Older VS Code without auxiliary windows keeps the editor tab.
+   */
+  private static async float(panel: vscode.WebviewPanel): Promise<void> {
+    for (let i = 0; i < 25 && !panel.active; i++) await new Promise((r) => setTimeout(r, 20));
+    if (!panel.active) return;
+    await Promise.resolve(vscode.commands.executeCommand('workbench.action.moveEditorToNewWindow')).catch(() => undefined);
   }
 
   private constructor(
