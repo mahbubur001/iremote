@@ -35,7 +35,7 @@ Keep `node --test` arguments as quoted globs, not directories: Node 22 (used in 
 wired to these containers. CI (`.github/workflows/ci.yml`) runs typecheck/lint/unit/package on Linux, Windows and macOS,
 and integration + e2e (under `xvfb-run`) on Linux; on e2e failure the VS Code logs are uploaded as an artifact.
 Releases: pushing a `v<version>` tag runs `.github/workflows/release.yml` (Marketplace via `vsce publish --oidc`,
-Open VSX via the `OVSX_PAT` secret, GitHub Release). The extension id is `itemcoder.iremote`.
+GitHub Release; no Open VSX). The extension id is `itemcoder.iremote`.
 
 ## Architecture
 

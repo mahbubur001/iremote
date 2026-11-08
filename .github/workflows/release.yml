@@ -32,15 +32,6 @@ jobs:
       - run: npm run package
       - name: Publish to Visual Studio Marketplace
         run: npx vsce publish --oidc --packagePath iremote-*.vsix
-      - name: Publish to Open VSX
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: |
-          if [ -z "$OVSX_PAT" ]; then
-            echo "::warning::OVSX_PAT secret not set; skipping Open VSX"
-            exit 0
-          fi
-          npx --yes ovsx publish iremote-*.vsix -p "$OVSX_PAT"
       - name: GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

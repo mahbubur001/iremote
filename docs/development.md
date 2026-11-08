@@ -68,7 +68,6 @@ because Docker accepts the port before the server inside the container is ready.
 - publishes to the **Visual Studio Marketplace** with Trusted Publishing (`vsce publish --oidc`) — no token is stored.
   The `itemcoder` publisher needs a Trusted Publishing policy for repository `mahbubur001/iremote`, workflow
   `release.yml`, no environment;
-- publishes to **Open VSX** when the `OVSX_PAT` repository secret is set (skipped with a warning otherwise);
 - creates a GitHub Release with the `.vsix` attached.
 
 ```bash
