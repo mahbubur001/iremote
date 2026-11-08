@@ -2,7 +2,7 @@
   "name": "iremote",
   "displayName": "iRemote — Deployment & Remote Host",
   "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "itemcoder",
   "license": "MIT",
   "repository": {
@@ -603,6 +603,13 @@
           "command": "iremote.remote.openSshSession",
           "when": "view == iremote.remoteHost && viewItem =~ /^remote-(server|dir|file).*ssh/",
           "group": "1_open@3"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "iremote.ssh.startSession",
+          "when": "activeEditor == terminalEditor || resourceScheme == vscode-terminal",
+          "group": "navigation@-10"
         }
       ]
     },

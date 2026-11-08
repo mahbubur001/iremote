@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- The **Start SSH Session…** button also appears in the editor title bar when a terminal is open as an editor tab (terminals in the editor area have no terminal panel title bar).
+
 ## 1.1.0
 
 - **Start SSH Session…** (PhpStorm's Tools | Start SSH Session): an SSH shell in a VS Code terminal for any SFTP server,
