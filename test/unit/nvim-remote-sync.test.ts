@@ -238,3 +238,43 @@ test('nvim PhpStorm import writes .vscode/iremote.json', async () => {
     await fs.rm(base, { recursive: true, force: true });
   }
 });
+
+test('nvim settings: read, validate + save, test connection, secrets', async () => {
+  const base = await fs.mkdtemp(join(tmpdir(), 'iremote-nvim-settings-'));
+  const root = join(base, 'fresh');
+  const remote = join(base, 'remote');
+  await fs.mkdir(root, { recursive: true });
+  await fs.mkdir(remote);
+  const { child, client } = startServer();
+  try {
+    await init(client, base);
+    // A project without .vscode/iremote.json yet: empty config with default options.
+    const got = await client.call<{ root: string; config: { servers: unknown[]; options: { autoUpload: string } } }>('configGet', { path: root });
+    assert.equal(got.root, root);
+    assert.deepEqual(got.config.servers, []);
+    assert.equal(got.config.options.autoUpload, 'never');
+
+    const server = { id: 'disk', name: 'Disk', type: 'local', host: '', rootPath: remote, mappings: [{ local: '', remote: '/', web: '/' }], excludedLocal: [], excludedRemote: [] };
+    const bad = await client.call<{ saved: boolean; errors: string[] }>('configSave', {
+      root,
+      config: { version: 1, options: got.config.options, servers: [{ ...server, id: 'bad id!' }] },
+    });
+    assert.equal(bad.saved, false);
+    assert.ok(bad.errors.length > 0);
+    assert.equal(await exists(join(root, '.vscode', 'iremote.json')), false, 'invalid config is not written');
+
+    const ok = await client.call<{ saved: boolean }>('configSave', { root, config: { version: 1, defaultServer: 'disk', options: got.config.options, servers: [server] } });
+    assert.equal(ok.saved, true);
+    const cfg = JSON.parse(await read(join(root, '.vscode', 'iremote.json')));
+    assert.equal(cfg.defaultServer, 'disk');
+    assert.equal((await client.call<{ servers: unknown[] }>('servers', { path: root })).servers.length, 1);
+
+    const good = await client.call<{ ok: boolean; message: string }>('testConnection', { server });
+    assert.equal(good.ok, true, good.message);
+    const missing = await client.call<{ ok: boolean; message: string }>('testConnection', { server: { ...server, rootPath: join(base, 'nope') } });
+    assert.equal(missing.ok, false);
+  } finally {
+    await stopServer(client, child);
+    await fs.rm(base, { recursive: true, force: true });
+  }
+});

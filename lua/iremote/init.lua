@@ -298,6 +298,16 @@ local function check_remote_buffers()
   end
 end
 
+--- Deployment settings dialog (servers, connection, mappings, excluded paths, options).
+function M.settings(path)
+  require("iremote.settings").open(path)
+end
+
+--- Action menu with every iRemote command.
+function M.menu()
+  require("iremote.menu").open()
+end
+
 --- Opens the Remote Host (neo-tree "iremote" source).
 function M.remote_browser(position)
   vim.cmd("Neotree source=iremote position=" .. (position or "float") .. " toggle")

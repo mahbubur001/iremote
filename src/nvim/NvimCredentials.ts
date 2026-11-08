@@ -69,6 +69,15 @@ export class NvimCredentials implements CredentialProvider {
     this.session.delete(this.account(serverId, kind));
   }
 
+  /** Saves a secret typed in the settings dialog: keychain when available, else for this session only. */
+  async store(serverId: string, kind: SecretKind, value: string): Promise<'keychain' | 'session'> {
+    const k = this.account(serverId, kind);
+    this.session.set(k, value);
+    if (!this.keychain.persistent) return 'session';
+    await this.keychain.set(k, value);
+    return 'keychain';
+  }
+
   async forget(serverId: string): Promise<void> {
     for (const kind of ['password', 'passphrase'] as SecretKind[]) {
       this.forgetSession(serverId, kind);

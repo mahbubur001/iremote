@@ -5,9 +5,9 @@ The same deployment engine as the VS Code extension, driven from Neovim. It read
 
 Covers upload / download, automatic upload (on `:write`, new files, delete / rename propagation and external changes),
 compare with the deployed version, the **Remote Host** browser (a neo-tree tab, with direct remote editing), **Sync with
-Deployed**, PhpStorm import, default server and auto-upload mode, keychain passwords and host-key / TLS trust. Server
-definitions are edited in `.vscode/iremote.json` (or in VS Code's Deployment Settings); there is no settings form in
-Neovim.
+Deployed**, PhpStorm import, default server and auto-upload mode, keychain passwords and host-key / TLS trust. Servers are
+set up in the **Deployment settings** dialog (`:IRemote settings`), which writes `.vscode/iremote.json`; `:IRemote`
+alone opens a menu with every action.
 
 ## Requirements
 
@@ -58,6 +58,8 @@ require("neo-tree").setup({
 
 | Command | PhpStorm / VS Code equivalent |
 |---|---|
+| `:IRemote` / `:IRemote menu` | Action menu (every command below, with the current server and mode) |
+| `:IRemote settings` | Deployment settings dialog |
 | `:IRemote upload [server-id]` | Upload to default server (current file, or the neo-tree node under the cursor — files and folders) |
 | `:IRemote download [server-id]` | Download from default server |
 | `:IRemote compare [server-id]` | Compare with Deployed Version — opens a diff tab (left: remote, read-only) |
@@ -78,6 +80,29 @@ Automatic upload follows the project's options exactly like VS Code / PhpStorm:
 - With `always` and `skipExternalChanges: false`, a recursive watcher uploads changes made outside Neovim (git
   checkout, build tools) and propagates their deletions; `.git` is ignored.
 - Mappings, excluded paths and *warn when uploading over newer file* (Overwrite / Compare / Skip) apply throughout.
+
+## Deployment settings dialog
+
+`:IRemote settings` opens PhpStorm's Deployment dialog in floating windows: servers on the left, tabs on the right.
+
+| Where | Key | Action |
+|---|---|---|
+| Server list | `a` / `c` / `d` | Add (name + type) / clone / delete a server |
+| | `*` | Make it the default server (●) |
+| | `<CR>` / `<Tab>` | Edit the selected server |
+| Detail pane | `1`–`4`, `<Tab>` / `<S-Tab>` | Connection · Mappings · Excluded · Options |
+| | `<CR>` / `e` | Edit the field under the cursor (text, list picker, number; *Password* asks and saves to the keychain) |
+| | `<Space>` | Toggle a checkbox |
+| | `a` / `d` | Add / delete a mapping or excluded path |
+| | `h` | Back to the server list |
+| Both | `T` | Test connection (works on unsaved changes) |
+| | `<C-s>` | Save to `.vscode/iremote.json` (validated first; invalid settings are not written) |
+| | `q` / `<Esc>` | Close (asks to save unsaved changes) |
+
+The Connection tab shows the fields that apply to the server type (SFTP auth method, key file, jump host; FTP passive
+mode, encoding, certificate; WebDAV auth). Global servers from VS Code are listed too: their connection is edited in VS
+Code, their mappings and excluded paths per project here. A project without `.vscode/iremote.json` starts empty; saving
+creates the file.
 
 ## Remote Host
 
@@ -156,4 +181,5 @@ VS Code-free parts of `src/config` — the very code the extension runs — plus
 prompts). The Lua plugin (`lua/iremote`, `plugin/iremote.lua`) talks to it with newline-delimited JSON-RPC over stdio;
 prompts (passwords, host keys, conflicts) are requests from the server back to Neovim, answered with `vim.ui.select` /
 `vim.ui.input` / `inputsecret()`. Server modules: `remote.ts` (Remote Host), `sync.ts`, `autoUpload.ts`,
-`import.ts`; the neo-tree source is `lua/iremote/neotree/`, the Sync view `lua/iremote/sync.lua`.
+`import.ts`, `settings.ts`; the neo-tree source is `lua/iremote/neotree/`, the Sync view `lua/iremote/sync.lua`, the settings dialog
+`lua/iremote/settings.lua`, the action menu `lua/iremote/menu.lua`.

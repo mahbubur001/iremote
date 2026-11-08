@@ -22,6 +22,12 @@ local subcommands = {
   browser = function()
     require("iremote").open_in_browser()
   end,
+  settings = function()
+    require("iremote").settings()
+  end,
+  menu = function()
+    require("iremote").menu()
+  end,
   remote = function(a)
     require("iremote").remote_browser(a[1])
   end,
@@ -51,7 +57,7 @@ local subcommands = {
 }
 
 vim.api.nvim_create_user_command("IRemote", function(cmd)
-  local name = cmd.fargs[1] or "server"
+  local name = cmd.fargs[1] or "menu"
   local fn = subcommands[name]
   if not fn then
     return vim.notify("iRemote: unknown subcommand " .. name, vim.log.levels.ERROR)

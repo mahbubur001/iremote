@@ -10,7 +10,9 @@
   - **Remote Host** as a neo-tree tab: browse, open and edit remote files in place (with a changed-on-server check and
     reload on focus), new file / folder, rename / move, delete, permissions, download, upload here;
   - **Sync with Deployed** view with per-file upload / download / delete actions;
-  - PhpStorm deployment import.
+  - PhpStorm deployment import;
+  - **Deployment settings dialog** (servers, connection, mappings, excluded paths, options, test connection) and a
+    one-key action menu.
 - Internal: `ServerManager`, logging and host-key trust no longer depend on the VS Code API (shared with Neovim).
 
 ## 1.1.4
