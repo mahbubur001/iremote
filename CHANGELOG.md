@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0
 
 - **Start SSH Session…** (PhpStorm's Tools | Start SSH Session): an SSH shell in a VS Code terminal for any SFTP server,
   PhpStorm SSH configuration (read live from the IDE settings) or `~/.ssh/config` host, or a typed `user@host:port`.
