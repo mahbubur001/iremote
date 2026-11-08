@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- **Neovim plugin** (phase 1): upload / download, automatic upload on `:write`, compare with the deployed version,
+  default server and auto-upload mode, keychain passwords — using the same `.vscode/iremote.json` and the same engine
+  as the extension. See [docs/neovim.md](docs/neovim.md).
+- Internal: `ServerManager`, logging and host-key trust no longer depend on the VS Code API (shared with Neovim).
+
 ## 1.1.4
 
 - SSH sessions open as a tab next to your other terminals: in the active group when started from a terminal tab, else

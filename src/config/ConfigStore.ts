@@ -196,6 +196,19 @@ export class ConfigStore implements vscode.Disposable {
     if (created) this.createdEmitter.fire(this._projects.find((p) => p.root === project.root) ?? project);
   }
 
+  async pinCertificate(serverId: string, fingerprint: string): Promise<void> {
+    const resolved = this.findServer(serverId);
+    if (!resolved) return;
+    if (resolved.scope === 'global') {
+      const servers = this.global.servers.map((s) => (s.id === serverId ? { ...s, trustedCertificateFingerprint: fingerprint } : s));
+      await this.saveGlobal({ version: 1, servers });
+    } else {
+      const project = resolved.project;
+      const servers = project.config.servers.map((s) => (s.id === serverId ? { ...s, trustedCertificateFingerprint: fingerprint } : s));
+      await this.saveProject(project, { ...project.config, servers });
+    }
+  }
+
   async saveGlobal(config: GlobalConfigFile): Promise<void> {
     const clean = normalizeGlobalConfig(config);
     await this.writeJson(this.globalUri, toJson(clean));

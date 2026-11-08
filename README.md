@@ -104,6 +104,7 @@ Settings are stored in `.vscode/iremote.json` (validated by a JSON schema). Exam
 - [Configuration reference](https://github.com/mahbubur001/iremote/blob/main/docs/configuration.md) — every option in `.vscode/iremote.json`
 - [Architecture](https://github.com/mahbubur001/iremote/blob/main/docs/architecture.md) — how the extension is put together
 - [Development](https://github.com/mahbubur001/iremote/blob/main/docs/development.md) — building, test servers, CI
+- [Neovim](https://github.com/mahbubur001/iremote/blob/main/docs/neovim.md) — the same deployment engine as a Neovim plugin (upload, download, auto-upload, compare)
 
 ## Development
 
@@ -147,7 +148,9 @@ src/
   views/      Remote Host tree, File Transfer view, status bar, decorations
   commands/   Deployment menu and Remote Host actions
   webviews/   Settings and Sync panels (extension side)
+  nvim/       Neovim server: stdio JSON-RPC, config discovery, system keychain (no vscode imports)
 webview/      Settings and Sync UIs (browser side, plain TypeScript + VS Code theme variables)
+lua/, plugin/ Neovim plugin (Lua) that drives dist/nvim/iremote.js
 ```
 
 ## Known limitations

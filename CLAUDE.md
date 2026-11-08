@@ -66,6 +66,12 @@ Layers, lowest first:
   `globalServerData`). `normalize.ts` sanitizes everything read from disk or the UI; `schema.ts` holds the TS types and
   defaults, and `schemas/iremote.schema.json` validates the file in the editor — keep the two in sync. Secrets live only
   in SecretStorage (`Credentials`), never in the JSON. `PhpStormImporter` reads `.idea/*.xml`.
+- **`src/nvim/`** — the Neovim server (`dist/nvim/iremote.js`): newline-delimited JSON-RPC over stdio (`rpc.ts`),
+  `NvimConfig` (same `.vscode/iremote.json` + VS Code's global servers file), `NvimCredentials` (system keychain via
+  `security` / `secret-tool`, prompts relayed to Neovim). Must not import `vscode` — its esbuild config does not mark
+  it external, so the build fails if it does. The Lua side lives in `lua/iremote/` and `plugin/iremote.lua`
+  (docs: `docs/neovim.md`). `ServerManager` takes a `ServerSource` + `CredentialProvider` so both hosts share it;
+  host-key policy is in `config/HostKeyTrust.ts`.
 - **`src/fs/RemoteFileSystemProvider`** — the `iremote://<serverId>/<abs path>` scheme for direct remote editing; it
   remembers the remote mtime/size read into an editor and asks before overwriting a file changed on the server.
 - **`src/features/`** — `AutoUploader` (save / file-watcher driven uploads, "skip external changes", delete & rename

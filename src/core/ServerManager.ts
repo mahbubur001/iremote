@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import { utils as sshUtils } from 'ssh2';
 import type { StringEncoding } from 'basic-ftp';
 import { ConnectionPool } from './ConnectionPool';
@@ -8,12 +7,27 @@ import { WebDavClient } from '../protocol/WebDavClient';
 import { LocalClient } from '../protocol/LocalClient';
 import { openJumpChannel, parseJump } from '../protocol/JumpHost';
 import { RemoteError, type ConnectContext, type ProgressFn, type RemoteClient } from '../protocol/types';
-import { Credentials, defaultAgentSocket, resolveSshConfig } from '../config/Credentials';
-import type { ConfigStore, ResolvedServer } from '../config/ConfigStore';
+import { defaultAgentSocket, resolveSshConfig } from '../config/sshConfig';
+import type { CredentialProvider } from '../config/CredentialProvider';
 import type { ServerConfig } from '../config/schema';
 import { log } from '../util/log';
+import { Emitter, type Disposable, type Event } from '../util/emitter';
 
 const MAX_AUTH_ATTEMPTS = 3;
+
+/** Where servers come from: VS Code's ConfigStore or the Neovim server's project config. */
+export interface ServerSource {
+  uniqueServers(): ServerConfig[];
+  findServer(id: string): ServerConfig | undefined;
+  readonly onDidChange: Event<void>;
+  /** Persists an "Accept and Remember" TLS certificate fingerprint on the server definition. */
+  pinCertificate(serverId: string, fingerprint: string): Promise<void>;
+}
+
+export interface ConnectionSettings {
+  timeoutMs: number;
+  idleCloseMs: number;
+}
 
 /**
  * RemoteClient that resolves credentials (keychain, prompts, ~/.ssh/config, agent, jump host) when it connects,
@@ -78,27 +92,20 @@ class DeferredClient implements RemoteClient {
   exec = (cmd: string) => this.c.exec(cmd);
 }
 
-export class ServerManager implements vscode.Disposable {
+export class ServerManager implements Disposable {
   private readonly pools = new Map<string, { pool: ConnectionPool; signature: string }>();
   /** TLS fingerprints accepted with "Accept Once", per server, for this session. */
   private readonly acceptedCerts = new Map<string, Set<string>>();
-  private readonly emitter = new vscode.EventEmitter<string>();
+  private readonly emitter = new Emitter<string>();
   /** Fires with a server id whenever its connection state changes. */
   readonly onDidChangeConnection = this.emitter.event;
 
   constructor(
-    private readonly config: ConfigStore,
-    readonly credentials: Credentials,
+    private readonly config: ServerSource,
+    readonly credentials: CredentialProvider,
+    private readonly settings: () => ConnectionSettings,
   ) {
     config.onDidChange(() => this.dropStalePools());
-  }
-
-  private settings() {
-    const c = vscode.workspace.getConfiguration('iremote');
-    return {
-      timeoutMs: c.get<number>('connection.timeoutSeconds', 20) * 1000,
-      idleCloseMs: c.get<number>('connection.idleCloseSeconds', 300) * 1000,
-    };
   }
 
   /** Connection-relevant fields; when they change the pool is rebuilt. */
@@ -166,24 +173,11 @@ export class ServerManager implements vscode.Disposable {
         if (!decision) return false;
         accepted.add(fingerprint);
         this.acceptedCerts.set(server.id, accepted);
-        if (decision === 'remember') await this.pinCertificate(server, fingerprint);
+        if (decision === 'remember') await this.config.pinCertificate(server.id, fingerprint);
         return true;
       },
       promptKeyboardInteractive: (prompts) => this.credentials.keyboardInteractive(server.name, prompts),
     };
-  }
-
-  private async pinCertificate(server: ServerConfig, fingerprint: string): Promise<void> {
-    const resolved = this.config.findServer(server.id) as ResolvedServer | undefined;
-    if (!resolved) return;
-    if (resolved.scope === 'global') {
-      const servers = this.config.globalServers.map((s) => (s.id === server.id ? { ...s, trustedCertificateFingerprint: fingerprint } : s));
-      await this.config.saveGlobal({ version: 1, servers });
-    } else {
-      const project = resolved.project;
-      const servers = project.config.servers.map((s) => (s.id === server.id ? { ...s, trustedCertificateFingerprint: fingerprint } : s));
-      await this.config.saveProject(project, { ...project.config, servers });
-    }
   }
 
   /**
