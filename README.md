@@ -29,7 +29,7 @@ dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
 | Notify about remote changes | ✓ open remote files are re-checked when VS Code regains focus |
 | File Transfer tool window | ✓ panel with direction, progress, duration and errors |
 | Import existing configuration | ✓ reads `.idea/deployment.xml`, `webServers.xml`, `sshConfigs.xml` |
-| Tools \| Start SSH Session… | ✓ **Start SSH Session…** lists your SFTP servers, PhpStorm's SSH configurations and `~/.ssh/config` hosts; also **SSH Session…** in the terminal's new-terminal dropdown and **Open SSH Session Here** in Remote Host |
+| Tools \| Start SSH Session… | ✓ **Start SSH Session…** lists your iRemote SFTP servers (project and global) and `~/.ssh/config` hosts; **Import PhpStorm SSH Configurations** copies PhpStorm's SSH list in once; also **SSH Session…** in the terminal's new-terminal dropdown and **Open SSH Session Here** in Remote Host |
 
 ### Security
 

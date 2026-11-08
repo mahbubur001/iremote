@@ -8,14 +8,15 @@ import { parseSshConfigs } from '../../src/config/PhpStormImporter';
 import {
   authorizedKeysCommand,
   fromDestination,
-  fromPhpStorm,
   fromServer,
   fromSshConfigAlias,
   mergeHosts,
   parseDestination,
   parseOpenSshHosts,
   parsePublicKey,
+  phpStormSshToServer,
 } from '../../src/ssh/hosts';
+import { normalizeGlobalConfig } from '../../src/config/normalize';
 import type { ServerConfig } from '../../src/config/schema';
 
 const PHPSTORM_XML = `<application>
@@ -42,18 +43,32 @@ const server = (fields: Partial<ServerConfig>): ServerConfig => ({
   ...fields,
 });
 
-test('PhpStorm SSH configurations become hosts with PhpStorm display names', () => {
-  const hosts = parseSshConfigs(PHPSTORM_XML).map(fromPhpStorm);
+test('IDE-level PhpStorm sshConfigs.xml (<application> root) is parsed, with custom names', () => {
+  const configs = parseSshConfigs(PHPSTORM_XML);
   assert.deepEqual(
-    hosts.map((h) => h.label),
-    ['harmony@199.167.202.14:2200', 'Rt - radiustheme.net', 'deploy@k.example.com:22'],
+    configs.map((c) => [c.id, c.host, c.port, c.username, c.authType, c.nameFormat, c.customName]),
+    [
+      ['a1', '199.167.202.14', 2200, 'harmony', 'PASSWORD', 'DESCRIPTIVE', undefined],
+      ['b2', 'radiustheme.net', 22, 'rt', 'PASSWORD', 'CUSTOM', 'Rt - radiustheme.net'],
+      ['c3', 'k.example.com', undefined, 'deploy', 'KEY_PAIR', 'DESCRIPTIVE', undefined],
+    ],
   );
-  // The config's own auth type wins over "parse ~/.ssh/config": a password host keeps password login.
-  assert.equal(hosts[1].server.auth, 'password');
-  assert.equal(hosts[2].server.auth, 'key');
-  assert.equal(hosts[2].server.privateKeyPath, `${homedir()}/.ssh/id_ed25519`);
-  assert.equal(hosts[0].server.id, 'phpstorm-ssh-a1');
-  assert.equal(hosts[0].server.port, 2200);
+});
+
+test('PhpStorm SSH configurations import as valid global SFTP servers with PhpStorm names', () => {
+  const servers = parseSshConfigs(PHPSTORM_XML).map(phpStormSshToServer);
+  const errors: string[] = [];
+  const clean = normalizeGlobalConfig({ version: 1, servers }, errors);
+  assert.deepEqual(errors, []);
+  assert.deepEqual(
+    clean.servers.map((s) => [s.id, s.name, s.type, s.port, s.auth]),
+    [
+      ['ssh-a1', 'harmony@199.167.202.14:2200', 'sftp', 2200, 'password'],
+      ['ssh-b2', 'Rt - radiustheme.net', 'sftp', 22, 'password'],
+      ['ssh-c3', 'deploy@k.example.com:22', 'sftp', 22, 'key'],
+    ],
+  );
+  assert.equal(clean.servers[2].privateKeyPath, `${homedir()}/.ssh/id_ed25519`);
 });
 
 test('OpenSSH config: concrete Host aliases only', () => {
@@ -74,17 +89,20 @@ test('parseDestination accepts the usual ssh spellings', () => {
 });
 
 test('mergeHosts de-duplicates (first list wins), sorts and applies installed keys', () => {
-  const own = fromServer(server({ id: 'own', name: 'Zeta', host: 'Example.com', port: 22, username: 'rt', auth: 'password' }));
-  const [phpstorm] = parseSshConfigs(PHPSTORM_XML).map(fromPhpStorm);
+  const own = fromServer(server({ id: 'own', name: 'Zeta', host: 'Example.com', port: 22, username: 'rt', auth: 'password' }), 'global');
+  const other = fromServer(server({ id: 'other', name: 'alpha', host: '10.0.0.1', port: 2200, username: 'harmony', auth: 'password' }), 'project');
   const dup = fromDestination({ username: 'rt', host: 'example.com', port: 22 });
-  const merged = mergeHosts([[own], [phpstorm], [dup]], { [phpstorm.key]: '/home/me/.ssh/id_ed25519' });
+  const merged = mergeHosts([[own, other], [dup]], { [other.key]: '/home/me/.ssh/id_ed25519' });
   assert.deepEqual(
-    merged.map((h) => h.label),
-    ['harmony@199.167.202.14:2200', 'Zeta'],
+    merged.map((h) => [h.label, h.scope]),
+    [
+      ['alpha', 'project'],
+      ['Zeta', 'global'],
+    ],
   );
   assert.equal(merged[0].server.auth, 'key');
   assert.equal(merged[0].server.privateKeyPath, '/home/me/.ssh/id_ed25519');
-  assert.equal(merged[1].source, 'iremote');
+  assert.equal(merged[1].server.id, 'own', 'the saved iRemote server wins, so its keychain password is used');
 });
 
 test('parsePublicKey accepts one OpenSSH public key line', () => {

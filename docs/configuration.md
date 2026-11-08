@@ -118,11 +118,14 @@ User/workspace settings (not in `iremote.json`) are listed in the [README](../RE
 the terminal panel title, and **Open SSH Session Here** on a Remote Host folder) opens an interactive shell in a VS Code
 terminal. The host list merges, first source winning on the same `user@host:port`:
 
-1. SFTP servers configured in iRemote (project and shared).
-2. PhpStorm SSH configurations: `.idea/sshConfigs.xml` of open folders, then the newest IDE's `options/sshConfigs.xml`.
-   Custom names are kept; others show as `user@host:port`, like PhpStorm.
-3. Concrete `Host` aliases in `~/.ssh/config` (connected through `~/.ssh/config`, agent and identity files).
-4. Hosts typed as `user@host:port` (kept as recent; remove one with the × button).
+1. SFTP servers configured in iRemote, labelled *project* or *global* (shared across projects). They log in with the
+   password saved in the keychain, so a saved server opens without a prompt.
+2. Concrete `Host` aliases in `~/.ssh/config` (connected through `~/.ssh/config`, agent and identity files).
+3. Hosts typed as `user@host:port` (kept as recent; remove one with the × button).
+
+**iRemote: Import PhpStorm SSH Configurations** (also offered in the list while it has no iRemote servers, and in the
+Remote Host view's `…` menu) copies PhpStorm's SSH configurations into the global servers once: names as in PhpStorm,
+root path `/`, hosts already present skipped. PhpStorm's passwords cannot be read, so each is asked on first connect.
 
 Passwords are asked once and can be saved to the keychain, exactly like for file transfers. The key button on a host
 (or **iRemote: Install Public Key on SSH Host…**) appends a `~/.ssh/*.pub` key to the server's

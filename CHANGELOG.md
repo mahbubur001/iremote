@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2
+
+- Start SSH Session lists only your iRemote SFTP servers (marked *project* or *global*), `~/.ssh/config` hosts and
+  recent typed hosts; PhpStorm's SSH configurations are no longer listed. Saved servers log in with their keychain
+  password without asking.
+- New PhpStorm-style icon for the SSH session button.
+- **Import PhpStorm SSH Configurations**: copies PhpStorm's SSH list into iRemote's global servers once (offered in the
+  session list while it has no servers, and in the Remote Host `…` menu).
+
 ## 1.1.1
 
 - The **Start SSH Session…** button also appears in the editor title bar when a terminal is open as an editor tab (terminals in the editor area have no terminal panel title bar).

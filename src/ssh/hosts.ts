@@ -1,5 +1,5 @@
 import { homedir } from 'node:os';
-import type { ServerConfig, SftpAuth } from '../config/schema';
+import type { GlobalServer, ServerConfig, SftpAuth } from '../config/schema';
 import type { ImportedSshConfig } from '../config/PhpStormImporter';
 
 /**
@@ -7,13 +7,15 @@ import type { ImportedSshConfig } from '../config/PhpStormImporter';
  * in plain Node. Every host is expressed as an SFTP `ServerConfig` so ServerManager's login flow can connect it.
  */
 
-export type SshHostSource = 'iremote' | 'phpstorm' | 'sshconfig' | 'recent';
+export type SshHostSource = 'iremote' | 'sshconfig' | 'recent';
 
 export interface SshHost {
   /** Identity for de-duplication: user@host:port, or the alias for ~/.ssh/config hosts. */
   key: string;
   label: string;
   source: SshHostSource;
+  /** iRemote servers: "visible only for this project" (project) or shared across projects (global). */
+  scope?: 'project' | 'global';
   server: ServerConfig;
 }
 
@@ -41,30 +43,32 @@ const sshServer = (id: string, name: string, fields: Partial<ServerConfig>): Ser
   ...fields,
 });
 
-export const fromServer = (server: ServerConfig): SshHost => ({
+export const fromServer = (server: ServerConfig, scope?: 'project' | 'global'): SshHost => ({
   key: server.auth === 'openssh' && server.sshConfigHost ? server.sshConfigHost : hostKey(server.username, server.host, server.port),
   label: server.name,
   source: 'iremote',
+  scope,
   server,
 });
 
-/** A PhpStorm SSH configuration. Its own auth type wins over "Parse config file ~/.ssh/config", which only adds settings. */
-export const fromPhpStorm = (c: ImportedSshConfig): SshHost => {
+/**
+ * A PhpStorm SSH configuration as an iRemote global SFTP server (one-time import). Its own auth type wins over
+ * "Parse config file ~/.ssh/config", which only adds settings; the display name follows PhpStorm.
+ */
+export const phpStormSshToServer = (c: ImportedSshConfig): GlobalServer => {
   const type = c.authType?.toUpperCase();
   const auth: SftpAuth = type === 'KEY_PAIR' && c.keyPath ? 'key' : type === 'OPEN_SSH' ? 'openssh' : 'password';
-  const label = c.nameFormat?.toUpperCase() === 'CUSTOM' && c.customName ? c.customName : describe(c);
   return {
-    key: hostKey(c.username, c.host, c.port),
-    label,
-    source: 'phpstorm',
-    server: sshServer(`phpstorm-ssh-${c.id}`, label, {
-      host: c.host,
-      port: c.port ?? 22,
-      username: c.username,
-      auth,
-      privateKeyPath: auth === 'key' ? c.keyPath?.replace(/\$USER_HOME\$/g, homedir()) : undefined,
-      sshConfigHost: auth === 'openssh' ? c.host : undefined,
-    }),
+    id: `ssh-${c.id}`.replace(/[^A-Za-z0-9._-]/g, '-'),
+    name: c.nameFormat?.toUpperCase() === 'CUSTOM' && c.customName ? c.customName : describe(c),
+    type: 'sftp',
+    host: c.host,
+    port: c.port ?? 22,
+    username: c.username,
+    auth,
+    privateKeyPath: auth === 'key' ? c.keyPath?.replace(/\$USER_HOME\$/g, homedir()) : undefined,
+    sshConfigHost: auth === 'openssh' ? c.host : undefined,
+    rootPath: '/',
   };
 };
 

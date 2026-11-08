@@ -2,7 +2,7 @@
   "name": "iremote",
   "displayName": "iRemote — Deployment & Remote Host",
   "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "publisher": "itemcoder",
   "license": "MIT",
   "repository": {
@@ -257,7 +257,10 @@
         "command": "iremote.ssh.startSession",
         "title": "Start SSH Session…",
         "category": "iRemote",
-        "icon": "$(remote)"
+        "icon": {
+          "light": "media/ssh-session.svg",
+          "dark": "media/ssh-session.svg"
+        }
       },
       {
         "command": "iremote.ssh.installPublicKey",
@@ -270,6 +273,12 @@
         "title": "Open SSH Session Here",
         "category": "iRemote",
         "icon": "$(terminal)"
+      },
+      {
+        "command": "iremote.ssh.importPhpStorm",
+        "title": "Import PhpStorm SSH Configurations",
+        "category": "iRemote",
+        "icon": "$(cloud-download)"
       }
     ],
     "viewsContainers": {
@@ -511,6 +520,11 @@
           "command": "iremote.ssh.startSession",
           "when": "view == terminal",
           "group": "navigation@9"
+        },
+        {
+          "command": "iremote.ssh.importPhpStorm",
+          "when": "view == iremote.remoteHost",
+          "group": "1_misc@3"
         }
       ],
       "view/item/context": [

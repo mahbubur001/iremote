@@ -4,14 +4,15 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Services } from '../services';
 import type { ServerConfig } from '../config/schema';
-import { findIdeOptionsDirs, parseSshConfigs } from '../config/PhpStormImporter';
+import { findIdeOptionsDirs, parseSshConfigs, type ImportedSshConfig } from '../config/PhpStormImporter';
 import {
   authorizedKeysCommand,
   describe,
   fromDestination,
-  fromPhpStorm,
   fromServer,
   fromSshConfigAlias,
+  hostKey,
+  phpStormSshToServer,
   mergeHosts,
   parseDestination,
   parseOpenSshHosts,
@@ -31,14 +32,13 @@ export const SSH_PROFILE_ID = 'iremote.ssh';
 
 const SOURCE_LABELS: Record<SshHost['source'], string> = {
   iremote: 'iRemote',
-  phpstorm: 'PhpStorm',
   sshconfig: '~/.ssh/config',
   recent: 'recent',
 };
 
 const readIf = (p: string): Promise<string | undefined> => fs.readFile(p, 'utf8').then((t) => t, () => undefined);
 
-type PickItem = vscode.QuickPickItem & { host?: SshHost; action?: 'new' | 'settings' };
+type PickItem = vscode.QuickPickItem & { host?: SshHost; action?: 'new' | 'settings' | 'import' };
 
 export class SshSessions {
   private readonly keyButton: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('key'), tooltip: 'Install Public Key on Host…' };
@@ -50,37 +50,57 @@ export class SshSessions {
     return this.s.context.globalState;
   }
 
-  /** PhpStorm SSH configurations: project-level .idea/sshConfigs.xml first, then the newest IDE's options. */
-  private async phpStormHosts(): Promise<SshHost[]> {
+  /** PhpStorm SSH configurations: .idea/sshConfigs.xml of open folders plus the newest IDE's options/sshConfigs.xml. */
+  private async phpStormSshConfigs(): Promise<ImportedSshConfig[]> {
     const files = (vscode.workspace.workspaceFolders ?? []).map((f) => join(f.uri.fsPath, '.idea', 'sshConfigs.xml'));
-    const ide = (await findIdeOptionsDirs()).map((d) => join(d, 'sshConfigs.xml'));
-    const hosts: SshHost[] = [];
+    for (const dir of await findIdeOptionsDirs()) {
+      const file = join(dir, 'sshConfigs.xml');
+      if (await readIf(file)) {
+        files.push(file);
+        break;
+      }
+    }
+    const configs: ImportedSshConfig[] = [];
     for (const file of files) {
       const xml = await readIf(file);
-      if (xml) hosts.push(...parseSshConfigs(xml).map(fromPhpStorm));
+      if (xml) for (const c of parseSshConfigs(xml)) if (!configs.some((x) => x.id === c.id)) configs.push(c);
     }
-    for (const file of ide) {
-      const xml = await readIf(file);
-      if (!xml) continue;
-      hosts.push(...parseSshConfigs(xml).map(fromPhpStorm));
-      break;
+    return configs;
+  }
+
+  /** One-time copy of PhpStorm's SSH configurations into iRemote's global servers (skips hosts already there). */
+  async importPhpStorm(): Promise<void> {
+    const configs = await this.phpStormSshConfigs();
+    if (configs.length === 0) {
+      void vscode.window.showInformationMessage('No PhpStorm SSH configurations found.');
+      return;
     }
-    return hosts;
+    const existing = this.s.config.globalServers;
+    const taken = new Set(existing.flatMap((sv) => [sv.id, hostKey(sv.username, sv.host, sv.port)]));
+    const added = configs.map(phpStormSshToServer).filter((sv) => !taken.has(sv.id) && !taken.has(hostKey(sv.username, sv.host, sv.port)));
+    if (added.length === 0) {
+      void vscode.window.showInformationMessage('All PhpStorm SSH configurations are already in iRemote.');
+      return;
+    }
+    await this.s.config.saveGlobal({ version: 1, servers: [...existing, ...added] });
+    void vscode.window.showInformationMessage(
+      `Imported ${added.length} PhpStorm SSH configuration${added.length === 1 ? '' : 's'} as global servers. Each password is asked once and saved in the keychain.`,
+    );
   }
 
   async hosts(): Promise<SshHost[]> {
-    const configured = new Map<string, ServerConfig>();
+    const configured = new Map<string, { server: ServerConfig; scope: 'project' | 'global' }>();
     // Global servers are listed even when no open project uses them; a session needs no mappings.
     const global = this.s.config.globalServers.map((sv): ServerConfig => ({ ...sv, mappings: [], excludedLocal: [], excludedRemote: [] }));
-    for (const sv of [...this.s.config.uniqueServers(), ...global]) {
-      if (sv.type === 'sftp' && !configured.has(sv.id)) configured.set(sv.id, sv);
+    const projectServers = this.s.config.uniqueServers().filter((sv) => sv.scope === 'project');
+    for (const [list, scope] of [[projectServers, 'project'], [global, 'global']] as const) {
+      for (const sv of list) if (sv.type === 'sftp' && !configured.has(sv.id)) configured.set(sv.id, { server: sv, scope });
     }
     const sshConfig = await readIf(join(homedir(), '.ssh', 'config'));
     const recent = this.state.get<Destination[]>(RECENT_KEY, []);
     return mergeHosts(
       [
-        [...configured.values()].map(fromServer),
-        await this.phpStormHosts(),
+        [...configured.values()].map((c) => fromServer(c.server, c.scope)),
         sshConfig ? parseOpenSshHosts(sshConfig).map(fromSshConfigAlias) : [],
         recent.map(fromDestination),
       ],
@@ -104,12 +124,15 @@ export class SshSessions {
           const where = describe(h.server);
           return {
             label: `$(${h.server.auth === 'key' || h.server.auth === 'agent' ? 'key' : 'remote'}) ${h.label}`,
-            description: [h.label === where ? '' : where, SOURCE_LABELS[h.source]].filter(Boolean).join(' · '),
+            description: [h.label === where ? '' : where, h.scope ?? SOURCE_LABELS[h.source]].filter(Boolean).join(' · '),
             host: h,
             buttons: h.source === 'recent' ? [this.keyButton, this.forgetButton] : h.server.auth === 'openssh' ? [] : [this.keyButton],
           };
         }),
         { label: '', kind: vscode.QuickPickItemKind.Separator },
+        ...(hosts.some((h) => h.source === 'iremote')
+          ? []
+          : [{ label: '$(cloud-download) Import PhpStorm SSH Configurations…', action: 'import' as const, alwaysShow: true }]),
         { label: '$(add) New SSH Session…', action: 'new', alwaysShow: true },
         { label: '$(gear) Deployment Settings…', action: 'settings', alwaysShow: true },
       ];
@@ -140,6 +163,12 @@ export class SshSessions {
       qp.onDidAccept(async () => {
         const item = qp.selectedItems[0];
         if (item?.host) return finish(item.host);
+        if (item?.action === 'import') {
+          qp.busy = true;
+          await guarded('Import PhpStorm SSH configurations', () => this.importPhpStorm())();
+          await build();
+          return;
+        }
         if (item?.action === 'settings') {
           finish(undefined);
           void vscode.commands.executeCommand('iremote.openSettings');
@@ -268,6 +297,7 @@ export const registerSshCommands = (s: Services): { sessions: SshSessions; dispo
   const sessions = new SshSessions(s);
   const disposables = [
     vscode.commands.registerCommand('iremote.ssh.startSession', guarded('Start SSH session', () => sessions.start())),
+    vscode.commands.registerCommand('iremote.ssh.importPhpStorm', guarded('Import PhpStorm SSH configurations', () => sessions.importPhpStorm())),
     vscode.commands.registerCommand('iremote.ssh.installPublicKey', guarded('Install public key', () => sessions.installKey())),
     vscode.commands.registerCommand(
       'iremote.remote.openSshSession',

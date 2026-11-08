@@ -69,8 +69,7 @@ out to be dead.
 - **`features/AutoUploader`** listens to saves, file creation/rename/delete and (in `always` mode) a file watcher, and
   implements *upload on save*, *skip external changes* and *delete remote files when local are deleted*.
 - **`features/RemoteChangeMonitor`** re-checks open remote files when the window regains focus.
-- **`ssh/`** — SSH sessions: `hosts.ts` (pure host list: iRemote servers, PhpStorm SSH configurations,
-  `~/.ssh/config`, recent hosts; authorized_keys command) and `SshTerminal` (a `Pseudoterminal` over an ssh2 shell
+- **`ssh/`** — SSH sessions: `hosts.ts` (pure host list: iRemote servers, `~/.ssh/config`, recent hosts; authorized_keys command) and `SshTerminal` (a `Pseudoterminal` over an ssh2 shell
   channel, connected with `ServerManager.connectShell`, which runs the normal login flow without the SFTP subsystem
   or the pool). Commands and the terminal profile provider are in `commands/ssh.ts`.
 - **`views/`** — Remote Host tree (lazy, drag and drop), File Transfer view, status bar, Explorer decorations.

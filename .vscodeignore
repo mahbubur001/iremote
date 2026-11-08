@@ -7,6 +7,7 @@
 !media/activity.svg
 !media/settings-*.svg
 !media/sync-*.svg
+!media/ssh-session.svg
 !schemas/**
 !package.json
 !README.md
