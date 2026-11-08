@@ -51,7 +51,7 @@ test('PhpStorm SSH configurations become hosts with PhpStorm display names', () 
   // The config's own auth type wins over "parse ~/.ssh/config": a password host keeps password login.
   assert.equal(hosts[1].server.auth, 'password');
   assert.equal(hosts[2].server.auth, 'key');
-  assert.equal(hosts[2].server.privateKeyPath, join(homedir(), '.ssh/id_ed25519').replace(/\\/g, '/'));
+  assert.equal(hosts[2].server.privateKeyPath, `${homedir()}/.ssh/id_ed25519`);
   assert.equal(hosts[0].server.id, 'phpstorm-ssh-a1');
   assert.equal(hosts[0].server.port, 2200);
 });
