@@ -1,5 +1,5 @@
 import { promises as fs } from 'node:fs';
-import { join, posix } from 'node:path';
+import { join } from 'node:path';
 import type { ServerManager } from '../core/ServerManager';
 import type { TransferQueue } from '../core/TransferQueue';
 import type { StateCache } from '../core/StateCache';
@@ -64,9 +64,12 @@ export const remotePathFor = (target: DeploymentTarget, localPath: string): stri
   return remote;
 };
 
-/** Temp file named like the remote file (keeps filetype detection working). */
+/**
+ * Temp file named like the remote file (keeps filetype detection working). Splits on both separators and replaces
+ * characters Windows forbids in names: `local` servers on Windows have paths like C:\\site\\index.php.
+ */
 export const tempPathFor = (ctx: Context, serverId: string, remotePath: string): string =>
-  join(ctx.tmpRoot, serverId, ...remotePath.split(posix.sep).filter(Boolean));
+  join(ctx.tmpRoot, serverId, ...remotePath.split(/[\\/]+/).filter(Boolean).map((seg) => seg.replace(/[:*?"<>|]/g, '_')));
 
 /** Downloads a remote file into its temp location; a missing file yields an empty temp file. */
 export const fetchToTemp = async (
