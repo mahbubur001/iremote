@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0
+
+- **Neovim plugin**, using the same `.vscode/iremote.json` and the same engine as the extension
+  ([docs/neovim.md](docs/neovim.md)):
+  - upload / download, compare with the deployed version, default server and auto-upload mode, keychain passwords;
+  - automatic upload on `:write`, of new files, delete / rename / move propagation from neo-tree, and external changes
+    (git checkout, build tools) in *Always* mode;
+  - **Remote Host** as a neo-tree tab: browse, open and edit remote files in place (with a changed-on-server check and
+    reload on focus), new file / folder, rename / move, delete, permissions, download, upload here;
+  - **Sync with Deployed** view with per-file upload / download / delete actions;
+  - PhpStorm deployment import;
+  - **Deployment settings dialog** (servers, connection, mappings, excluded paths, options, test connection) and a
+    one-key action menu;
+  - File Transfer view with live progress, `:checkhealth iremote`, statusline component.
+- Internal: `ServerManager`, logging and host-key trust no longer depend on the VS Code API (shared with Neovim).
+
 ## 1.1.4
 
 - SSH sessions open as a tab next to your other terminals: in the active group when started from a terminal tab, else

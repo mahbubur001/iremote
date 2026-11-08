@@ -1,55 +1,18 @@
 import * as vscode from 'vscode';
 import { promises as fs } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import SSHConfig from 'ssh-config';
-import { checkHostKey, fingerprintSha256, hostToken, isRevoked, parseKnownHosts } from './KnownHosts';
+import { HostKeyTrust, type TrustedKeys } from './HostKeyTrust';
 import type { ServerConfig } from './schema';
+import { expandHome } from './sshConfig';
+import type { CredentialProvider, SecretKind } from './CredentialProvider';
 
 const STORE_KEY = 'iremote.knownHosts';
 
-type SecretKind = 'password' | 'passphrase';
 
-export const expandHome = (p: string): string => (p === '~' || p.startsWith('~/') || p.startsWith('~\\') ? join(homedir(), p.slice(1)) : p);
+export { expandHome, resolveSshConfig, defaultAgentSocket, type SshConfigResolution } from './sshConfig';
 
-export interface SshConfigResolution {
-  host: string;
-  port?: number;
-  user?: string;
-  identityFiles: string[];
-  proxyJump?: string;
-}
-
-/** Resolves a Host alias through ~/.ssh/config (Match exec is never evaluated). */
-export const resolveSshConfig = async (alias: string): Promise<SshConfigResolution> => {
-  let text: string;
-  try {
-    text = await fs.readFile(join(homedir(), '.ssh', 'config'), 'utf8');
-  } catch {
-    return { host: alias, identityFiles: [] };
-  }
-  const c = SSHConfig.parse(text).compute(alias, { ignoreCase: true, matchExec: false });
-  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-  const list = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? [v] : []);
-  const port = Number(first(c.port));
-  const proxyJump = first(c.proxyjump);
-  return {
-    host: first(c.hostname) ?? alias,
-    port: Number.isFinite(port) && port > 0 ? port : undefined,
-    user: first(c.user),
-    identityFiles: list(c.identityfile).map(expandHome),
-    proxyJump: proxyJump && proxyJump.toLowerCase() !== 'none' ? proxyJump : undefined,
-  };
-};
-
-export const defaultAgentSocket = (): string | undefined =>
-  process.platform === 'win32' ? '\\\\.\\pipe\\openssh-ssh-agent' : process.env.SSH_AUTH_SOCK;
-
-export class Credentials {
+export class Credentials implements CredentialProvider {
   /** Passwords typed for this session only (user chose not to save, or not yet saved). */
   private readonly session = new Map<string, string>();
-  /** Host keys accepted with "Trust Once" — valid until VS Code restarts so pooled connections don't re-prompt. */
-  private readonly sessionHostKeys = new Set<string>();
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -120,76 +83,48 @@ export class Credentials {
 
   // ---- Host keys -------------------------------------------------------------------------
 
-  private stored(): Record<string, { type: string; key: string }[]> {
-    return this.context.globalState.get<Record<string, { type: string; key: string }[]>>(STORE_KEY) ?? {};
-  }
+  private readonly hostKeys = new HostKeyTrust({
+    extraKnownHostsFiles: () => vscode.workspace.getConfiguration('iremote').get<string[]>('ssh.knownHostsFiles', []),
+    load: () => this.context.globalState.get<TrustedKeys>(STORE_KEY) ?? {},
+    save: async (keys) => {
+      await this.context.globalState.update(STORE_KEY, keys);
+    },
+    ask: async (q) => {
+      if (q.kind === 'revoked') {
+        void vscode.window.showErrorMessage(`The host key for ${q.host} (${q.fingerprint}) is marked @revoked in known_hosts. Connection refused.`, { modal: true });
+        return undefined;
+      }
+      if (q.kind === 'changed') {
+        const choice = await vscode.window.showWarningMessage(
+          `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED for ${q.host}:${q.port}!`,
+          {
+            modal: true,
+            detail:
+              `The ${q.keyType} host key presented by the server does not match the key previously trusted.\n` +
+              `This could mean someone is intercepting the connection (man-in-the-middle), or the server was reinstalled.\n\n` +
+              `New fingerprint: ${q.fingerprint}\n\nOnly continue if you have verified this fingerprint with the server administrator.`,
+          },
+          'Replace Trusted Key',
+        );
+        return choice === 'Replace Trusted Key' ? 'remember' : undefined;
+      }
+      const choice = await vscode.window.showWarningMessage(
+        `The authenticity of host ${q.host}:${q.port} can't be established.`,
+        { modal: true, detail: `${q.keyType} key fingerprint is ${q.fingerprint}.\n\nAre you sure you want to continue connecting?` },
+        'Trust and Remember',
+        'Trust Once',
+      );
+      return choice === 'Trust and Remember' ? 'remember' : choice === 'Trust Once' ? 'once' : undefined;
+    },
+  });
 
-  private async remember(host: string, port: number, type: string, key: Buffer): Promise<void> {
-    const all = this.stored();
-    const token = hostToken(host, port);
-    all[token] = [...(all[token] ?? []).filter((e) => e.type !== type), { type, key: key.toString('base64') }];
-    await this.context.globalState.update(STORE_KEY, all);
-  }
-
-  async forgetHostKeys(host: string, port: number): Promise<void> {
-    const all = this.stored();
-    delete all[hostToken(host, port)];
-    await this.context.globalState.update(STORE_KEY, all);
+  forgetHostKeys(host: string, port: number): Promise<void> {
+    return this.hostKeys.forget(host, port);
   }
 
   /** Enforces known-hosts policy: ~/.ssh/known_hosts first, then keys the user accepted in iRemote. */
-  async verifyHostKey(host: string, port: number, keyType: string, key: Buffer): Promise<boolean> {
-    const extra = vscode.workspace.getConfiguration('iremote').get<string[]>('ssh.knownHostsFiles', []);
-    const files = [join(homedir(), '.ssh', 'known_hosts'), ...extra.map(expandHome)];
-    const systemEntries: ReturnType<typeof parseKnownHosts> = [];
-    for (const file of files) {
-      try {
-        systemEntries.push(...parseKnownHosts(await fs.readFile(file, 'utf8')));
-      } catch {
-        // Missing file: rely on the remaining files and iRemote's own store.
-      }
-    }
-    const fp = fingerprintSha256(key);
-    if (isRevoked(systemEntries, key)) {
-      void vscode.window.showErrorMessage(`The host key for ${host} (${fp}) is marked @revoked in known_hosts. Connection refused.`, { modal: true });
-      return false;
-    }
-    const sys = checkHostKey(systemEntries, host, port, keyType, key);
-    if (sys === 'trusted') return true;
-
-    const sessionId = `${hostToken(host, port)} ${key.toString('base64')}`;
-    if (this.sessionHostKeys.has(sessionId)) return true;
-
-    const own = this.stored()[hostToken(host, port)] ?? [];
-    const ownMatch = own.find((e) => e.type === keyType);
-    if (ownMatch?.key === key.toString('base64')) return true;
-
-    if (sys === 'mismatch' || ownMatch) {
-      const choice = await vscode.window.showWarningMessage(
-        `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED for ${host}:${port}!`,
-        {
-          modal: true,
-          detail:
-            `The ${keyType} host key presented by the server does not match the key previously trusted.\n` +
-            `This could mean someone is intercepting the connection (man-in-the-middle), or the server was reinstalled.\n\n` +
-            `New fingerprint: ${fp}\n\nOnly continue if you have verified this fingerprint with the server administrator.`,
-        },
-        'Replace Trusted Key',
-      );
-      if (choice !== 'Replace Trusted Key') return false;
-      await this.remember(host, port, keyType, key);
-      return true;
-    }
-
-    const choice = await vscode.window.showWarningMessage(
-      `The authenticity of host ${host}:${port} can't be established.`,
-      { modal: true, detail: `${keyType} key fingerprint is ${fp}.\n\nAre you sure you want to continue connecting?` },
-      'Trust and Remember',
-      'Trust Once',
-    );
-    if (choice === 'Trust and Remember') await this.remember(host, port, keyType, key);
-    if (choice === 'Trust Once') this.sessionHostKeys.add(sessionId);
-    return choice === 'Trust and Remember' || choice === 'Trust Once';
+  verifyHostKey(host: string, port: number, keyType: string, key: Buffer): Promise<boolean> {
+    return this.hostKeys.verify(host, port, keyType, key);
   }
 
   /** Prompt for an untrusted TLS certificate. Returns 'remember', 'once' or undefined (reject). */

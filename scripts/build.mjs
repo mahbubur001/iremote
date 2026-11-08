@@ -25,6 +25,20 @@ const extension = {
   conditions: ['node', 'import', 'require', 'default'],
 };
 
+// Neovim server: same core/protocol layers, driven over stdio by the Lua plugin in lua/iremote. `vscode` is not external
+// here on purpose, so importing a VS Code-bound module into src/nvim fails the build.
+const nvim = {
+  ...common,
+  entryPoints: ['src/nvim/main.ts'],
+  outfile: 'dist/nvim/iremote.js',
+  platform: 'node',
+  format: 'cjs',
+  target: 'node20',
+  external: ['cpu-features', './crypto/build/Release/sshcrypto.node'],
+  mainFields: ['module', 'main'],
+  conditions: ['node', 'import', 'require', 'default'],
+};
+
 const webviews = {
   ...common,
   entryPoints: { settings: 'webview/settings/main.ts', sync: 'webview/sync/main.ts' },
@@ -43,11 +57,11 @@ const copyAssets = async () => {
 
 if (watch) {
   await copyAssets();
-  const contexts = await Promise.all([esbuild.context(extension), esbuild.context(webviews)]);
+  const contexts = await Promise.all([esbuild.context(extension), esbuild.context(nvim), esbuild.context(webviews)]);
   await Promise.all(contexts.map((c) => c.watch()));
 } else {
   // Production output starts clean so no stale source maps end up in the VSIX.
   if (production) await rm('dist', { recursive: true, force: true });
-  await Promise.all([esbuild.build(extension), esbuild.build(webviews)]);
+  await Promise.all([esbuild.build(extension), esbuild.build(nvim), esbuild.build(webviews)]);
   await copyAssets();
 }

@@ -26,3 +26,17 @@ await esbuild.build({
   conditions: ['node', 'import', 'require', 'default'],
   logLevel: 'warning',
 });
+
+// The Neovim server bundle, spawned over stdio by test/unit/nvim-server.test.ts.
+await esbuild.build({
+  entryPoints: ['src/nvim/main.ts'],
+  outfile: 'out-test/nvim/iremote.js',
+  bundle: true,
+  platform: 'node',
+  format: 'cjs',
+  target: 'node20',
+  external: ['cpu-features', './crypto/build/Release/sshcrypto.node'],
+  mainFields: ['module', 'main'],
+  conditions: ['node', 'import', 'require', 'default'],
+  logLevel: 'warning',
+});

@@ -20,7 +20,7 @@ import { registerDeploymentCommands } from './commands/deployment';
 import { registerRemoteCommands } from './commands/remote';
 import { registerSshCommands } from './commands/ssh';
 import { RemoteError } from './protocol/types';
-import { log } from './util/log';
+import { log, type LogLevel } from './util/log';
 import type { Services } from './services';
 
 let cache: StateCache | undefined;
@@ -73,11 +73,25 @@ const reportProblems = (config: ConfigStore): void => {
 };
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  log.init(context);
+  const channel = vscode.window.createOutputChannel('iRemote', { log: true });
+  context.subscriptions.push(channel);
+  log.attach({
+    error: (m) => channel.error(m),
+    info: (m) => channel.info(m),
+    debug: (m) => channel.debug(m),
+    show: () => channel.show(true),
+    level: () => vscode.workspace.getConfiguration('iremote').get<LogLevel>('log.level', 'brief'),
+  });
 
   const config = new ConfigStore(context);
   const credentials = new Credentials(context);
-  const servers = new ServerManager(config, credentials);
+  const servers = new ServerManager(config, credentials, () => {
+    const c = vscode.workspace.getConfiguration('iremote');
+    return {
+      timeoutMs: c.get<number>('connection.timeoutSeconds', 20) * 1000,
+      idleCloseMs: c.get<number>('connection.idleCloseSeconds', 300) * 1000,
+    };
+  });
   const queue = new TransferQueue(
     (id) => servers.poolById(id),
     (id) => config.findServer(id)?.project.config.options.concurrency ?? 4,
