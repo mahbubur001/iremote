@@ -69,6 +69,7 @@ require("neo-tree").setup({
 | `:IRemote remote [float\|left\|right\|current]` | Remote Host (neo-tree `iremote` source) |
 | `:IRemote sync [paths…]` | Sync with Deployed (default: the project root) |
 | `:IRemote import [dir]` | Import PhpStorm's `.idea/deployment.xml` / `webServers.xml` |
+| `:IRemote transfers` | File Transfer view: live queue with progress and history (`x` cancel, `c` clear finished) |
 | `:IRemote log` | Transfer and connection log |
 | `:IRemote cancel` / `disconnect` / `reload` | Cancel transfers, close connections, re-read config |
 | `:IRemote forget` | Forget the default server's saved password and trusted host key |
@@ -148,7 +149,11 @@ action. Identical files are hidden (`i` shows them).
 PhpStorm projects: `:IRemote import` reads `.idea/deployment.xml`, `webServers.xml` and `sshConfigs.xml` (plus
 IDE-level servers when needed) and writes `.vscode/iremote.json`, merging with or replacing existing servers.
 
-`require("iremote").statusline()` returns e.g. `󰒍 Production ↑` (`↑` = automatic upload on) for your statusline.
+`require("iremote").statusline()` returns e.g. `󰒍 Production ↑` (`↑` = automatic upload on) for your statusline, e.g.
+as a lualine component: `{ function() return require("iremote").statusline() end }`.
+
+`:checkhealth iremote` checks Neovim, Node.js, the server build, the keychain, the project configuration and the
+neo-tree source.
 
 ## Options
 

@@ -95,6 +95,7 @@ local function register_handlers()
   end)
 
   rpc.on_notification("transfer", function(p)
+    require("iremote.transfers").record(p)
     local name = vim.fn.fnamemodify(p.kind == "download" and p.target or p.source, ":t")
     if p.status == "done" then
       add_log("info", string.format("%s %s → %s", p.kind, p.source, p.target))
@@ -301,6 +302,11 @@ end
 --- Deployment settings dialog (servers, connection, mappings, excluded paths, options).
 function M.settings(path)
   require("iremote.settings").open(path)
+end
+
+--- File Transfer view (live queue and history).
+function M.transfers()
+  require("iremote.transfers").open()
 end
 
 --- Action menu with every iRemote command.
@@ -575,5 +581,8 @@ function M.setup(opts)
 end
 
 M._find_project = find_project
+M._server_script = function()
+  return server_script
+end
 
 return M

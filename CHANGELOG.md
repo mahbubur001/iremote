@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
 
 - **Neovim plugin**, using the same `.vscode/iremote.json` and the same engine as the extension
   ([docs/neovim.md](docs/neovim.md)):
@@ -12,7 +12,8 @@
   - **Sync with Deployed** view with per-file upload / download / delete actions;
   - PhpStorm deployment import;
   - **Deployment settings dialog** (servers, connection, mappings, excluded paths, options, test connection) and a
-    one-key action menu.
+    one-key action menu;
+  - File Transfer view with live progress, `:checkhealth iremote`, statusline component.
 - Internal: `ServerManager`, logging and host-key trust no longer depend on the VS Code API (shared with Neovim).
 
 ## 1.1.4

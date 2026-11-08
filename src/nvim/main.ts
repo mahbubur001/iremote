@@ -103,9 +103,22 @@ rpc.on('initialize', async (p: InitParams) => {
     (id) => servers.poolById(id),
     (id) => (config.findServer(id) as NvimServer | undefined)?.project.config.options.concurrency ?? 4,
   );
+  // Progress updates are throttled by the queue (≤ 5/s per task); the plugin's File Transfer view shows them live.
   queue.on('changed', (t) => {
-    if (t.status === 'queued') return;
-    rpc.notify('transfer', { kind: t.kind, server: t.serverName, source: t.source, target: t.target, status: t.status, error: t.error, pending: queue.pendingCount });
+    rpc.notify('transfer', {
+      id: t.id,
+      kind: t.kind,
+      server: t.serverName,
+      source: t.source,
+      target: t.target,
+      status: t.status,
+      error: t.error,
+      bytes: t.bytes,
+      total: t.total,
+      startedAt: t.startedAt,
+      finishedAt: t.finishedAt,
+      pending: queue.pendingCount,
+    });
   });
   queue.on('idle', () => rpc.notify('idle', {}));
   const cache = new StateCache(join(p.stateDir, 'sync-state.json'));

@@ -39,6 +39,9 @@ local subcommands = {
   import = function(a)
     require("iremote").import_phpstorm(a[1] and vim.fn.fnamemodify(a[1], ":p") or nil)
   end,
+  transfers = function()
+    require("iremote").transfers()
+  end,
   log = function()
     require("iremote").show_log()
   end,
