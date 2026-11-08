@@ -17,6 +17,10 @@ local defaults = {
   log_level = "brief", -- errors | brief | details
   timeout_seconds = 20,
   idle_close_seconds = 300,
+  -- Remote Host: open the mapped local file instead of a remote copy when it exists (PhpStorm default).
+  open_local_if_mapped = true,
+  -- Check open remote buffers for changes on the server when Neovim regains focus.
+  check_remote_on_focus = true,
 }
 
 M.config = vim.deepcopy(defaults)
@@ -83,6 +87,11 @@ local function register_handlers()
     if p.level == "error" then
       notify(p.message, vim.log.levels.ERROR)
     end
+  end)
+
+  rpc.on_notification("configChanged", function()
+    status_cache = {}
+    vim.api.nvim_exec_autocmds("User", { pattern = "IRemoteConfigChanged", modeline = false })
   end)
 
   rpc.on_notification("transfer", function(p)
@@ -176,8 +185,13 @@ local function call(method, params, cb)
   end)
 end
 
+--- Public: raw server call for extensions (neo-tree source, sync view).
+M.request = function(method, params, cb)
+  call(method, params, cb)
+end
+
 local function report(verb, r)
-  if not r then
+  if not r or r == vim.NIL then
     return
   end
   if #r.failed > 0 then
@@ -198,7 +212,7 @@ local function current_path()
     if ok and vim.bo.filetype == "neo-tree" then
       local state = manager.get_state("filesystem")
       local node = state.tree and state.tree:get_node()
-      if node then
+      if node and state.bufnr == vim.api.nvim_get_current_buf() then
         return node:get_id()
       end
     end
@@ -216,6 +230,120 @@ local function need_path(path)
 end
 
 -- Public API -------------------------------------------------------------------------------
+
+M.report = report
+
+--- Opens a remote file from the Remote Host: the mapped local file when `prefer_local` and it exists, else a temp copy
+--- that is written back to the server on :write (with a "changed on the server" check).
+---@param anchor string any path inside the project
+function M.open_remote(anchor, server_id, remote_path, cmd, prefer_local)
+  call("remoteOpen", { path = anchor, serverId = server_id, remotePath = remote_path, preferLocal = prefer_local }, function(r)
+    vim.schedule(function()
+      if vim.bo.filetype == "neo-tree" then
+        -- open in the editor window, not inside the explorer: close a floating tree, leave a sidebar
+        if vim.api.nvim_win_get_config(0).relative ~= "" then
+          pcall(vim.cmd, "Neotree close")
+        else
+          vim.cmd("wincmd p")
+        end
+      end
+      vim.cmd((cmd or "edit") .. " " .. vim.fn.fnameescape(r.path))
+      if r.remote then
+        vim.b.iremote = { anchor = anchor, tmp = r.path, server = r.server, remote_path = r.remotePath }
+        notify("Editing " .. r.remotePath .. " on " .. r.server .. " — :write saves to the server")
+      end
+    end)
+  end)
+end
+
+local function save_remote(buf)
+  local info = vim.b[buf].iremote
+  call("remoteSave", { path = info.anchor, tmpPath = info.tmp }, function(r)
+    if r.saved then
+      notify("Saved " .. info.remote_path .. " → " .. r.server, vim.log.levels.INFO, { id = "iremote_transfer" })
+    else
+      notify("Not saved to the server: " .. info.remote_path .. " changed there", vim.log.levels.WARN)
+    end
+  end)
+end
+
+--- Remote change monitor: asks to reload remote buffers that changed on the server.
+local function check_remote_buffers()
+  local by_anchor = {}
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    local info = vim.api.nvim_buf_is_loaded(buf) and vim.b[buf].iremote
+    if info then
+      by_anchor[info.anchor] = by_anchor[info.anchor] or {}
+      by_anchor[info.anchor][info.tmp] = buf
+    end
+  end
+  for anchor, bufs in pairs(by_anchor) do
+    call("remoteCheck", { path = anchor, tmpPaths = vim.tbl_keys(bufs) }, function(changed)
+      for _, tmp in ipairs(changed) do
+        local buf = bufs[tmp]
+        local info = vim.b[buf].iremote
+        vim.ui.select({ "Reload from server", "Keep my version" }, { prompt = info.remote_path .. " changed on " .. info.server }, function(c)
+          if c == "Reload from server" then
+            call("remoteReload", { path = anchor, tmpPath = tmp }, function()
+              vim.schedule(function()
+                vim.api.nvim_buf_call(buf, function()
+                  vim.cmd("edit!")
+                end)
+              end)
+            end)
+          end
+        end)
+      end
+    end)
+  end
+end
+
+--- Opens the Remote Host (neo-tree "iremote" source).
+function M.remote_browser(position)
+  vim.cmd("Neotree source=iremote position=" .. (position or "float") .. " toggle")
+end
+
+--- Sync with Deployed for `paths` (default: the project root of the current file).
+function M.sync(paths, server_id)
+  require("iremote.sync").open(paths, server_id)
+end
+
+--- Imports PhpStorm's .idea/deployment.xml + webServers.xml into .vscode/iremote.json.
+function M.import_phpstorm(root)
+  root = root or vim.fn.getcwd()
+  call("importPhpStorm", { root = root }, function(r)
+    if not r or r == vim.NIL then
+      return
+    end
+    if r.imported == 0 then
+      return notify("No PhpStorm deployment configuration (.idea/deployment.xml or webServers.xml) found in " .. root, vim.log.levels.WARN)
+    end
+    status_cache = {}
+    notify(string.format("Imported %d server(s) from PhpStorm into %s/.vscode/iremote.json", r.imported, r.root))
+    for _, w in ipairs(r.warnings or {}) do
+      notify(w, vim.log.levels.WARN)
+    end
+  end)
+end
+
+--- neo-tree `event_handlers` that propagate file operations made in neo-tree (create / delete / rename / move) to the
+--- default server, following the project's automatic-upload options.
+function M.neo_tree_event_handlers()
+  local function send(method, params)
+    if find_project(params.path or params.to or params.from) then
+      call(method, params)
+    end
+  end
+  local function moved(args)
+    send("fileRenamed", { from = args.source, to = args.destination })
+  end
+  return {
+    { event = "file_added", handler = function(path) send("fileCreated", { path = path }) end },
+    { event = "file_deleted", handler = function(path) send("fileDeleted", { path = path }) end },
+    { event = "file_renamed", handler = moved },
+    { event = "file_moved", handler = moved },
+  }
+end
 
 ---@param paths string[]|string|nil defaults to the current file (or neo-tree node)
 ---@param server_id string?
@@ -395,6 +523,9 @@ function M.statusline()
 end
 
 local function on_write(args)
+  if vim.b[args.buf].iremote then
+    return save_remote(args.buf)
+  end
   if not M.config.auto_upload or vim.bo[args.buf].buftype ~= "" then
     return
   end
@@ -421,6 +552,16 @@ function M.setup(opts)
   local group = vim.api.nvim_create_augroup("iremote", { clear = true })
   vim.api.nvim_create_autocmd("BufWritePost", { group = group, callback = on_write })
   vim.api.nvim_create_autocmd("VimLeavePre", { group = group, callback = rpc.stop })
+  if M.config.check_remote_on_focus then
+    vim.api.nvim_create_autocmd("FocusGained", {
+      group = group,
+      callback = function()
+        if initialized then
+          check_remote_buffers()
+        end
+      end,
+    })
+  end
 end
 
 M._find_project = find_project

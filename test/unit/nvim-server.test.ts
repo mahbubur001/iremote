@@ -1,57 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
+import { startServer, stopServer } from './nvimClient';
 import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-
-/** Minimal JSON-RPC client playing the Neovim side; answers server→client prompts from `answers`. */
-class Client {
-  private buffer = '';
-  private id = 1;
-  private readonly pending = new Map<number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
-  readonly notifications: { method: string; params: unknown }[] = [];
-  readonly asked: { method: string; params: unknown }[] = [];
-
-  constructor(
-    private readonly child: ChildProcessWithoutNullStreams,
-    private readonly answers: Record<string, (params: { choices?: string[] }) => unknown>,
-  ) {
-    child.stdout.setEncoding('utf8');
-    child.stdout.on('data', (chunk: string) => {
-      this.buffer += chunk;
-      let nl: number;
-      while ((nl = this.buffer.indexOf('\n')) >= 0) {
-        const msg = JSON.parse(this.buffer.slice(0, nl));
-        this.buffer = this.buffer.slice(nl + 1);
-        this.handle(msg);
-      }
-    });
-  }
-
-  private handle(msg: { id?: number; method?: string; params?: unknown; result?: unknown; error?: { message: string } }): void {
-    if (msg.method && msg.id !== undefined) {
-      this.asked.push({ method: msg.method, params: msg.params });
-      const answer = this.answers[msg.method]?.(msg.params as { choices?: string[] }) ?? null;
-      this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: answer })}\n`);
-    } else if (msg.method) {
-      this.notifications.push({ method: msg.method, params: msg.params });
-    } else if (msg.id !== undefined) {
-      const p = this.pending.get(msg.id)!;
-      this.pending.delete(msg.id);
-      if (msg.error) p.reject(new Error(msg.error.message));
-      else p.resolve(msg.result);
-    }
-  }
-
-  call<T = unknown>(method: string, params: unknown = {}): Promise<T> {
-    const id = this.id++;
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
-      this.child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
-    });
-  }
-}
 
 const setup = async () => {
   const base = await fs.mkdtemp(join(tmpdir(), 'iremote-nvim-test-'));
@@ -75,15 +27,10 @@ const setup = async () => {
   return { base, project, remote };
 };
 
-const start = (answers: Record<string, (params: { choices?: string[] }) => unknown> = {}) => {
-  const child = spawn(process.execPath, [join(__dirname, '..', 'nvim', 'iremote.js')], { stdio: ['pipe', 'pipe', 'pipe'] });
-  return { child, client: new Client(child, answers) };
-};
-
 test('nvim server: upload, auto-upload, fetch, download and default server over stdio', async () => {
   const { base, project, remote } = await setup();
   const conflicts: string[] = [];
-  const { child, client } = start({
+  const { child, client } = startServer({
     confirm: (p) => {
       conflicts.push(String((p as { message?: string }).message));
       return 'Skip';
@@ -152,8 +99,7 @@ test('nvim server: upload, auto-upload, fetch, download and default server over 
 
     assert.ok(client.notifications.some((n) => n.method === 'transfer'));
   } finally {
-    await client.call('shutdown').catch(() => undefined);
-    await new Promise((r) => child.once('exit', r));
+    await stopServer(client, child);
     await fs.rm(base, { recursive: true, force: true });
   }
 });

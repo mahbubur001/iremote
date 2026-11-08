@@ -69,6 +69,10 @@ export class NvimConfig implements ServerSource {
 
   constructor(private readonly globalServersFile: string) {}
 
+  get loadedProjects(): NvimProject[] {
+    return [...this.projects.values()];
+  }
+
   get problems(): string[] {
     return [...this.globalErrors, ...[...this.projects.values()].flatMap((p) => p.errors.map((e) => `${p.root}: ${e}`))];
   }
@@ -86,9 +90,18 @@ export class NvimConfig implements ServerSource {
     if (known) return known;
     for (let dir = abs; ; dir = dirname(dir)) {
       const configPath = join(dir, CONFIG_RELATIVE_PATH);
-      if (await fs.stat(configPath).then((s) => s.isFile(), () => false)) return this.loadProject(dir);
+      if (await fs.stat(configPath).then((s) => s.isFile(), () => false)) {
+        const project = await this.loadProject(dir);
+        this.emitter.fire();
+        return project;
+      }
       if (dirname(dir) === dir) return undefined;
     }
+  }
+
+  /** The project at `root`, created in memory (no file yet) when it has no `.vscode/iremote.json`. */
+  async ensureProject(root: string): Promise<NvimProject> {
+    return this.projects.get(resolve(root)) ?? (await this.projectFor(root)) ?? this.loadProject(resolve(root));
   }
 
   private async loadProject(root: string): Promise<NvimProject> {

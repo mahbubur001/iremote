@@ -22,6 +22,17 @@ local subcommands = {
   browser = function()
     require("iremote").open_in_browser()
   end,
+  remote = function(a)
+    require("iremote").remote_browser(a[1])
+  end,
+  sync = function(a)
+    require("iremote").sync(#a > 0 and vim.tbl_map(function(p)
+      return vim.fn.fnamemodify(vim.fn.expand(p), ":p"):gsub("/$", "")
+    end, a) or nil)
+  end,
+  import = function(a)
+    require("iremote").import_phpstorm(a[1] and vim.fn.fnamemodify(a[1], ":p") or nil)
+  end,
   log = function()
     require("iremote").show_log()
   end,
@@ -58,6 +69,12 @@ end, {
     end
     if words[2] == "autoupload" then
       return { "always", "onExplicitSave", "never" }
+    end
+    if words[2] == "remote" then
+      return { "float", "left", "right", "current" }
+    end
+    if words[2] == "sync" or words[2] == "import" then
+      return vim.fn.getcompletion(arg, "file")
     end
     return {}
   end,

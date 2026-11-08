@@ -2,9 +2,15 @@
 
 ## Unreleased
 
-- **Neovim plugin** (phase 1): upload / download, automatic upload on `:write`, compare with the deployed version,
-  default server and auto-upload mode, keychain passwords — using the same `.vscode/iremote.json` and the same engine
-  as the extension. See [docs/neovim.md](docs/neovim.md).
+- **Neovim plugin**, using the same `.vscode/iremote.json` and the same engine as the extension
+  ([docs/neovim.md](docs/neovim.md)):
+  - upload / download, compare with the deployed version, default server and auto-upload mode, keychain passwords;
+  - automatic upload on `:write`, of new files, delete / rename / move propagation from neo-tree, and external changes
+    (git checkout, build tools) in *Always* mode;
+  - **Remote Host** as a neo-tree tab: browse, open and edit remote files in place (with a changed-on-server check and
+    reload on focus), new file / folder, rename / move, delete, permissions, download, upload here;
+  - **Sync with Deployed** view with per-file upload / download / delete actions;
+  - PhpStorm deployment import.
 - Internal: `ServerManager`, logging and host-key trust no longer depend on the VS Code API (shared with Neovim).
 
 ## 1.1.4
