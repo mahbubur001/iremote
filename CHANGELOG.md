@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4
+
+- SSH sessions open as a tab next to your other terminals: in the active group when started from a terminal tab, else
+  in the group that holds terminal tabs, else at `terminal.integrated.defaultLocation` (they used to always open in the
+  panel).
+
 ## 1.1.3
 
 - Deployment Settings opens in its own floating window, like PhpStorm's Deployment dialog; OK / Cancel close it.

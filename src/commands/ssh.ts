@@ -210,8 +210,22 @@ export class SshSessions {
     return new SshTerminal(host.server, this.s.servers, cwd);
   }
 
+  /**
+   * Opens next to the user's other terminals: as a tab in the active group when a terminal tab is active (the editor
+   * title button), else in the group that already holds terminal tabs, else wherever terminals open by default.
+   */
+  private location(): vscode.ExtensionTerminalOptions['location'] {
+    const isTerminal = (t: vscode.Tab | undefined) => t?.input instanceof vscode.TabInputTerminal;
+    const { activeTabGroup, all } = vscode.window.tabGroups;
+    if (isTerminal(activeTabGroup.activeTab)) return { viewColumn: activeTabGroup.viewColumn };
+    const group = [...all].reverse().find((g) => g.tabs.some(isTerminal));
+    if (group) return { viewColumn: group.viewColumn };
+    return vscode.workspace.getConfiguration('terminal.integrated').get<string>('defaultLocation') === 'editor' ? vscode.TerminalLocation.Editor : undefined;
+  }
+
   open(host: SshHost, cwd?: string): void {
-    const term = vscode.window.createTerminal({ name: host.label, pty: this.terminal(host, cwd), iconPath: new vscode.ThemeIcon('remote') });
+    const location = this.location();
+    const term = vscode.window.createTerminal({ name: host.label, pty: this.terminal(host, cwd), iconPath: new vscode.ThemeIcon('remote'), location });
     term.show();
   }
 
