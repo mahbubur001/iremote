@@ -29,6 +29,7 @@ dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
 | Notify about remote changes | ✓ open remote files are re-checked when VS Code regains focus |
 | File Transfer tool window | ✓ panel with direction, progress, duration and errors |
 | Import existing configuration | ✓ reads `.idea/deployment.xml`, `webServers.xml`, `sshConfigs.xml` |
+| Tools \| Start SSH Session… | ✓ **Start SSH Session…** lists your SFTP servers, PhpStorm's SSH configurations and `~/.ssh/config` hosts; also **SSH Session…** in the terminal's new-terminal dropdown and **Open SSH Session Here** in Remote Host |
 
 ### Security
 
@@ -37,6 +38,9 @@ dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
   a changed host key shows a man-in-the-middle warning.
 - TLS certificates (FTPS, WebDAV over HTTPS) are validated before any credentials are sent. Self-signed certificates
   are only accepted when *Allow untrusted certificates* is enabled and you confirm the fingerprint (it can be pinned).
+- SSH sessions use the same login as file transfers (keychain, agent, jump host, host-key checks). **Install Public
+  Key on SSH Host…** adds your `~/.ssh/*.pub` key to the server's `authorized_keys`, verifies it, and switches the
+  session to key login so no password is needed any more.
 - SSH: password, private key (OpenSSH/PuTTY, with passphrase), SSH agent, `~/.ssh/config` (HostName, User, Port,
   IdentityFile, ProxyJump), jump hosts and keyboard-interactive / 2FA prompts.
 

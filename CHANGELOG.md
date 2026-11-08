@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Start SSH Session…** (PhpStorm's Tools | Start SSH Session): an SSH shell in a VS Code terminal for any SFTP server,
+  PhpStorm SSH configuration (read live from the IDE settings) or `~/.ssh/config` host, or a typed `user@host:port`.
+  Also available as **SSH Session…** in the terminal's new-terminal dropdown, from the terminal panel title and as
+  **Open SSH Session Here** in Remote Host. Logins reuse the keychain, agent, jump host and host-key checks.
+- **Install Public Key on SSH Host…**: adds your public key to the server's `authorized_keys`, verifies it and uses
+  key login for that host's sessions from then on.
+- Fix: IDE-level PhpStorm settings (`options/webServers.xml`, `options/sshConfigs.xml`) were not read, so the import
+  fallback for shared servers and SSH configurations found nothing.
+
 ## 1.0.4
 
 - When `.vscode/iremote.json` is first created in a git repository, iRemote offers to add it to `.gitignore` (setting `iremote.git.offerToIgnoreConfig`).

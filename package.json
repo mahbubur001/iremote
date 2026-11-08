@@ -38,7 +38,8 @@
   "activationEvents": [
     "workspaceContains:.vscode/iremote.json",
     "workspaceContains:.idea/deployment.xml",
-    "onFileSystem:iremote"
+    "onFileSystem:iremote",
+    "onTerminalProfile:iremote.ssh"
   ],
   "capabilities": {
     "untrustedWorkspaces": {
@@ -251,6 +252,24 @@
         "title": "Add Server as Workspace Folder",
         "category": "iRemote",
         "icon": "$(root-folder-opened)"
+      },
+      {
+        "command": "iremote.ssh.startSession",
+        "title": "Start SSH Session…",
+        "category": "iRemote",
+        "icon": "$(remote)"
+      },
+      {
+        "command": "iremote.ssh.installPublicKey",
+        "title": "Install Public Key on SSH Host…",
+        "category": "iRemote",
+        "icon": "$(key)"
+      },
+      {
+        "command": "iremote.remote.openSshSession",
+        "title": "Open SSH Session Here",
+        "category": "iRemote",
+        "icon": "$(terminal)"
       }
     ],
     "viewsContainers": {
@@ -370,6 +389,10 @@
         {
           "command": "iremote.clearTransfers",
           "when": "false"
+        },
+        {
+          "command": "iremote.remote.openSshSession",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -483,6 +506,11 @@
           "command": "iremote.clearTransfers",
           "when": "view == iremote.transfers",
           "group": "navigation@2"
+        },
+        {
+          "command": "iremote.ssh.startSession",
+          "when": "view == terminal",
+          "group": "navigation@9"
         }
       ],
       "view/item/context": [
@@ -570,6 +598,11 @@
           "command": "iremote.remote.refresh",
           "when": "view == iremote.remoteHost && viewItem =~ /^remote-(dir|server)/",
           "group": "8_refresh@1"
+        },
+        {
+          "command": "iremote.remote.openSshSession",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-(server|dir|file).*ssh/",
+          "group": "1_open@3"
         }
       ]
     },
@@ -648,7 +681,16 @@
         "fileMatch": ".vscode/iremote.json",
         "url": "./schemas/iremote.schema.json"
       }
-    ]
+    ],
+    "terminal": {
+      "profiles": [
+        {
+          "id": "iremote.ssh",
+          "title": "SSH Session…",
+          "icon": "remote"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run build -- --production",

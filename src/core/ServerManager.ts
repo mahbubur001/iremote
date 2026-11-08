@@ -186,8 +186,18 @@ export class ServerManager implements vscode.Disposable {
     }
   }
 
+  /**
+   * Connects an SSH session for an interactive terminal: same login flow as file transfers (keychain, prompts,
+   * ~/.ssh/config, agent, jump host, host-key checks) but without the SFTP subsystem and outside the pool.
+   */
+  async connectShell(server: ServerConfig): Promise<{ client: SftpClient; cleanup?: () => void }> {
+    if (server.type !== 'sftp') throw new RemoteError('Unsupported', `${server.name} is not an SFTP/SSH server.`);
+    const { client, cleanup } = await this.connectClient(server, true);
+    return { client: client as SftpClient, cleanup };
+  }
+
   /** Builds and connects the protocol client, prompting for secrets and retrying failed logins. */
-  async connectClient(server: ServerConfig): Promise<{ client: RemoteClient; cleanup?: () => void }> {
+  async connectClient(server: ServerConfig, shellOnly = false): Promise<{ client: RemoteClient; cleanup?: () => void }> {
     if (server.type === 'local') {
       const client = new LocalClient();
       await client.connect();
@@ -198,12 +208,12 @@ export class ServerManager implements vscode.Disposable {
       const ctx = this.baseContext(server);
       let cleanup: (() => void) | undefined;
       try {
-        const built = await this.build(server, ctx, attempt > 1);
+        const built = await this.build(server, ctx, attempt > 1, shellOnly);
         prompted ||= built.prompted;
         cleanup = built.cleanup;
         await built.client.connect();
         log.info(`Connected to ${server.name}`);
-        this.emitter.fire(server.id);
+        if (!shellOnly) this.emitter.fire(server.id);
         if (prompted) void this.credentials.offerToSave(server, built.secretKind);
         return { client: built.client, cleanup };
       } catch (e) {
@@ -236,6 +246,7 @@ export class ServerManager implements vscode.Disposable {
     server: ServerConfig,
     ctx: ConnectContext,
     retry: boolean,
+    shellOnly = false,
   ): Promise<{ client: RemoteClient; prompted: boolean; secretKind: 'password' | 'passphrase'; cleanup?: () => void }> {
     const detail = retry ? 'Authentication failed. Please try again.' : undefined;
     const needsPrompt = async (kind: 'password' | 'passphrase') =>
@@ -243,7 +254,7 @@ export class ServerManager implements vscode.Disposable {
 
     switch (server.type) {
       case 'sftp':
-        return this.buildSftp(server, ctx, retry, detail);
+        return this.buildSftp(server, ctx, retry, detail, shellOnly);
       case 'ftp':
       case 'ftps':
       case 'ftps-implicit': {
@@ -290,7 +301,7 @@ export class ServerManager implements vscode.Disposable {
     }
   }
 
-  private async buildSftp(server: ServerConfig, ctx: ConnectContext, retry: boolean, detail?: string) {
+  private async buildSftp(server: ServerConfig, ctx: ConnectContext, retry: boolean, detail?: string, shellOnly = false) {
     let host = server.host;
     let port = server.port ?? 22;
     let username = server.username ?? '';
@@ -364,6 +375,7 @@ export class ServerManager implements vscode.Disposable {
         keepAliveSeconds: server.keepAliveSeconds ?? 30,
         useAgent: !!ctx.agent,
         tryKeyboard: true,
+        shellOnly,
       },
       ctx,
     );

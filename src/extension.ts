@@ -18,6 +18,7 @@ import { RemoteChangeMonitor } from './features/RemoteChangeMonitor';
 import { GitIgnoreOffer } from './features/GitIgnoreOffer';
 import { registerDeploymentCommands } from './commands/deployment';
 import { registerRemoteCommands } from './commands/remote';
+import { registerSshCommands } from './commands/ssh';
 import { RemoteError } from './protocol/types';
 import { log } from './util/log';
 import type { Services } from './services';
@@ -104,6 +105,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     new GitIgnoreOffer(config, context.workspaceState),
     ...registerDeploymentCommands(services),
     ...registerRemoteCommands(services),
+    ...registerSshCommands(services).disposables,
     config.onDidChange(() => reportProblems(config)),
   );
   reportProblems(config);

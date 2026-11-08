@@ -112,6 +112,24 @@ The file is never uploaded: `.vscode` is in the default *Exclude items by name* 
 
 User/workspace settings (not in `iremote.json`) are listed in the [README](../README.md#settings).
 
+## SSH sessions
+
+**iRemote: Start SSH Session…** (also **SSH Session…** in the terminal panel's new-terminal dropdown, the remote icon in
+the terminal panel title, and **Open SSH Session Here** on a Remote Host folder) opens an interactive shell in a VS Code
+terminal. The host list merges, first source winning on the same `user@host:port`:
+
+1. SFTP servers configured in iRemote (project and shared).
+2. PhpStorm SSH configurations: `.idea/sshConfigs.xml` of open folders, then the newest IDE's `options/sshConfigs.xml`.
+   Custom names are kept; others show as `user@host:port`, like PhpStorm.
+3. Concrete `Host` aliases in `~/.ssh/config` (connected through `~/.ssh/config`, agent and identity files).
+4. Hosts typed as `user@host:port` (kept as recent; remove one with the × button).
+
+Passwords are asked once and can be saved to the keychain, exactly like for file transfers. The key button on a host
+(or **iRemote: Install Public Key on SSH Host…**) appends a `~/.ssh/*.pub` key to the server's
+`~/.ssh/authorized_keys` (creating it with mode 600 and `~/.ssh` with 700), verifies a key login, and from then on the
+session list uses that key for the host. For servers in your iRemote config this applies to SSH sessions only;
+deployment keeps the authentication chosen in Deployment Settings.
+
 ## Importing from PhpStorm
 
 **iRemote: Import PhpStorm Deployment Configuration** reads `.idea/deployment.xml`, `.idea/webServers.xml` and

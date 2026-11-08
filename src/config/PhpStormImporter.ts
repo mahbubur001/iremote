@@ -36,7 +36,8 @@ const prop = (n: Node | undefined, name: string): string | undefined => {
   return undefined;
 };
 
-const components = (doc: Node): Node[] => asArray((doc.project as Node | undefined)?.component as Node[] | undefined);
+/** Project files (.idea/*.xml) have a <project> root, IDE-level files (options/*.xml) an <application> root. */
+const components = (doc: Node): Node[] => asArray(((doc.project ?? doc.application) as Node | undefined)?.component as Node[] | undefined);
 const component = (doc: Node, name: string): Node | undefined => components(doc).find((c) => attr(c, 'name') === name);
 
 export interface ImportedSshConfig {
@@ -47,6 +48,9 @@ export interface ImportedSshConfig {
   authType?: string;
   keyPath?: string;
   useOpenSSHConfig?: boolean;
+  /** Display name when nameFormat is CUSTOM (PhpStorm otherwise shows user@host:port). */
+  customName?: string;
+  nameFormat?: string;
 }
 
 export interface ImportedWebServer {
@@ -95,6 +99,8 @@ export const parseSshConfigs = (xml: string): ImportedSshConfig[] => {
       authType: prop(c, 'authType'),
       keyPath: prop(c, 'keyPath'),
       useOpenSSHConfig: prop(c, 'useOpenSSHConfig') === 'true',
+      customName: prop(c, 'customName'),
+      nameFormat: prop(c, 'nameFormat'),
     }))
     .filter((c) => c.id && c.host);
 };

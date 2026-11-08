@@ -28,6 +28,8 @@ export interface SftpOptions {
   /** Prefer agent auth; when false and no key/password is given, auth fails fast. */
   useAgent: boolean;
   tryKeyboard: boolean;
+  /** Skip the SFTP subsystem: the connection only serves interactive shells (SSH terminal sessions). */
+  shellOnly?: boolean;
 }
 
 /** Reads the algorithm name embedded at the start of an SSH public key blob. */
@@ -62,7 +64,7 @@ export class SftpClient implements RemoteClient {
   ) {}
 
   get connected(): boolean {
-    return !!this.sftp;
+    return this.opts.shellOnly ? !!this.conn : !!this.sftp;
   }
 
   onClose(listener: () => void): void {
@@ -144,22 +146,24 @@ export class SftpClient implements RemoteClient {
       conn.connect(config);
     });
 
-    this.sftp = await new Promise<SFTPWrapper>((resolve, reject) =>
-      conn.sftp((err, sftp) =>
-        err ? reject(new RemoteError('Connection', `SFTP subsystem unavailable: ${err.message}`, undefined, err)) : resolve(sftp),
-      ),
-    );
+    if (!opts.shellOnly) {
+      this.sftp = await new Promise<SFTPWrapper>((resolve, reject) =>
+        conn.sftp((err, sftp) =>
+          err ? reject(new RemoteError('Connection', `SFTP subsystem unavailable: ${err.message}`, undefined, err)) : resolve(sftp),
+        ),
+      );
+    }
     this.conn = conn;
 
     const dropped = () => {
-      if (!this.sftp) return;
+      if (!this.conn) return;
       this.sftp = undefined;
       this.conn = undefined;
       if (!this.closing) this.closeListeners.forEach((l) => l());
     };
     conn.on('error', (err) => ctx.log?.(`SSH error: ${err.message}`));
     conn.on('close', dropped);
-    this.sftp.on('close', dropped);
+    this.sftp?.on('close', dropped);
   }
 
   async close(): Promise<void> {
@@ -322,6 +326,17 @@ export class SftpClient implements RemoteClient {
   async setMtime(path: string, mtime: number): Promise<void> {
     const secs = Math.floor(mtime / 1000);
     await this.call<void>('utimes', path, (cb) => this.s.utimes(path, secs, secs, (err) => cb(err)));
+  }
+
+  /** Opens an interactive login shell on a pseudo-terminal of the given size. */
+  async shell(window: { cols: number; rows: number }): Promise<ClientChannel> {
+    const conn = this.conn;
+    if (!conn) throw new RemoteError('Connection', 'Not connected.');
+    return new Promise<ClientChannel>((resolve, reject) =>
+      conn.shell({ term: 'xterm-256color', cols: window.cols, rows: window.rows }, (err, ch) =>
+        err ? reject(new RemoteError('Unsupported', `The server refused a shell: ${err.message}`, undefined, err)) : resolve(ch),
+      ),
+    );
   }
 
   async exec(command: string): Promise<{ code: number; stdout: string; stderr: string }> {

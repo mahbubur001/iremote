@@ -103,7 +103,9 @@ export class RemoteHostTree implements vscode.TreeDataProvider<RemoteNode>, vsco
       );
       item.iconPath = new vscode.ThemeIcon(connected ? 'vm-active' : 'vm-outline', isDefault ? new vscode.ThemeColor('charts.blue') : undefined);
       const target = this.config.target(server);
-      item.contextValue = ['remote-server', target.mapper.hasMappings ? 'mapped' : '', server.webUrl ? 'web' : ''].filter(Boolean).join(';');
+      item.contextValue = ['remote-server', target.mapper.hasMappings ? 'mapped' : '', server.webUrl ? 'web' : '', server.type === 'sftp' ? 'ssh' : '']
+        .filter(Boolean)
+        .join(';');
       return item;
     }
     if (node.kind === 'error') {
@@ -123,7 +125,7 @@ export class RemoteHostTree implements vscode.TreeDataProvider<RemoteNode>, vsco
     const excluded = target.mapper.isRemoteExcluded(path);
     const mapped = !!local && !excluded;
     const web = !!target.mapper.webUrlForRemote(path);
-    item.contextValue = [dir ? 'remote-dir' : 'remote-file', mapped ? 'mapped' : '', web ? 'web' : '', server.type !== 'webdav' ? 'chmod' : '']
+    item.contextValue = [dir ? 'remote-dir' : 'remote-file', mapped ? 'mapped' : '', web ? 'web' : '', server.type !== 'webdav' ? 'chmod' : '', server.type === 'sftp' ? 'ssh' : '']
       .filter(Boolean)
       .join(';');
     const mtime = stat.mtime ? new Date(stat.mtime).toLocaleString() : 'unknown';
