@@ -78,7 +78,8 @@ test('nvim server: upload, auto-upload, fetch, download and default server over 
 
     // Compare: fetch the remote copy into a temp file.
     const fetched = await client.call<{ tmpPath: string; remotePath: string; exists: boolean }>('fetchRemote', { path: join(project, 'index.php') });
-    assert.equal(fetched.remotePath, join(remote, 'site', 'index.php'));
+    // Remote paths are POSIX-style, also for local servers on Windows (C:/…).
+    assert.equal(fetched.remotePath.replace(/\\/g, '/'), join(remote, 'site', 'index.php').replace(/\\/g, '/'));
     assert.equal(fetched.exists, true);
     assert.equal(await fs.readFile(fetched.tmpPath, 'utf8'), '<?php echo "server";');
 

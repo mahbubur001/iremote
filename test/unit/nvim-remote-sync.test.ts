@@ -88,7 +88,8 @@ test('nvim remote host: list, open/edit/save with conflict check, new, rename, c
     await client.call('remoteRename', { path: p.root, serverId: 'disk', from: join(p.site, 'js', 'a.js'), to: join(p.site, 'js', 'b.js') });
     assert.equal(await exists(join(p.site, 'js', 'b.js')), true);
     await client.call('remoteChmod', { path: p.root, serverId: 'disk', remotePaths: [join(p.site, 'js', 'b.js')], mode: '600' });
-    assert.equal((await fs.stat(join(p.site, 'js', 'b.js'))).mode & 0o777, 0o600);
+    // Windows has no Unix permission bits (chmod only toggles read-only).
+    if (process.platform !== 'win32') assert.equal((await fs.stat(join(p.site, 'js', 'b.js'))).mode & 0o777, 0o600);
     await assert.rejects(client.call('remoteChmod', { path: p.root, serverId: 'disk', remotePaths: [join(p.site, 'js')], mode: 'rwx' }), /Invalid permissions/);
     await client.call('remoteDelete', { path: p.root, serverId: 'disk', remotePaths: [{ path: join(p.site, 'js'), isDir: true }] });
     assert.equal(await exists(join(p.site, 'js')), false);
