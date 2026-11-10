@@ -264,6 +264,7 @@ export const registerDeploymentCommands = (s: Services): vscode.Disposable[] => 
       }),
     ),
 
+    SettingsPanel.register(s),
     vscode.commands.registerCommand('iremote.openSettings', (serverId?: string) => SettingsPanel.show(s, typeof serverId === 'string' ? serverId : undefined)),
   ];
 };

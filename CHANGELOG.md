@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.2
+
+- Deployment Settings opens as a popup over the window, like PhpStorm's Deployment dialog (VS Code's modal editor).
+  New default `iremote.settings.openIn: "popup"`; it falls back to the floating window when
+  `workbench.editor.useModal` is `off`.
+
 ## 1.2.1
 
 - Remote Host shows one server at a time, like PhpStorm: the last chosen one, else the default server, else the first.

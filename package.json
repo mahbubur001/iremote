@@ -2,7 +2,7 @@
   "name": "iremote",
   "displayName": "iRemote — Deployment & Remote Host",
   "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "publisher": "itemcoder",
   "license": "MIT",
   "repository": {
@@ -49,6 +49,18 @@
     "virtualWorkspaces": false
   },
   "contributes": {
+    "customEditors": [
+      {
+        "viewType": "iremote.deploymentSettings",
+        "displayName": "iRemote Deployment Settings",
+        "selector": [
+          {
+            "filenamePattern": "*.iremote-deployment"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
     "commands": [
       {
         "command": "iremote.openSettings",
@@ -639,14 +651,16 @@
         "iremote.settings.openIn": {
           "type": "string",
           "enum": [
+            "popup",
             "window",
             "editor"
           ],
           "enumDescriptions": [
-            "Open Deployment Settings in its own floating window, like PhpStorm's dialog.",
+            "Open Deployment Settings as a popup over the window, like PhpStorm's dialog (VS Code's modal editor; falls back to a floating window when modal editors are off or unavailable).",
+            "Open Deployment Settings in its own floating window.",
             "Open Deployment Settings as an editor tab."
           ],
-          "default": "window",
+          "default": "popup",
           "description": "Where Deployment Settings opens."
         },
         "iremote.remoteHost.openBehavior": {

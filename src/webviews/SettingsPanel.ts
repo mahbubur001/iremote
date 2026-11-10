@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { relative, isAbsolute, sep } from 'node:path';
+import { relative, isAbsolute, sep, posix } from 'node:path';
 import type { Services } from '../services';
 import type { Project, ResolvedServer } from '../config/ConfigStore';
 import type { GlobalServer, ProjectConfigFile, ServerConfig } from '../config/schema';
@@ -8,6 +8,19 @@ import { errorMessage } from '../protocol/types';
 import { log } from '../util/log';
 import { webviewHtml } from './html';
 import type { SecretChange, SettingsToHost, SettingsToWebview, UiProject, UiServer } from '../../webview/shared/protocol';
+
+const SETTINGS_VIEW_TYPE = 'iremote.deploymentSettings';
+const SETTINGS_SCHEME = 'iremote-settings';
+/**
+ * Placeholder resource the popup is opened on (never read). Its own scheme keeps the breadcrumb bar away, and a path
+ * at the workspace root makes VS Code show no folder next to the popup title.
+ */
+const settingsUri = (): vscode.Uri => {
+  const root = vscode.workspace.workspaceFolders?.[0]?.uri.path ?? '/';
+  return vscode.Uri.from({ scheme: SETTINGS_SCHEME, path: posix.join(root, 'Deployment.iremote-deployment') });
+};
+/** VS Code's internal MODAL_EDITOR_GROUP. */
+const MODAL_GROUP = -4;
 
 const projectKey = (p: Project) => p.folder.uri.toString();
 
@@ -31,26 +44,75 @@ export class SettingsPanel {
   private static current?: SettingsPanel;
   private readonly disposables: vscode.Disposable[] = [];
 
+  private static pendingServer?: string;
+
+  /**
+   * "popup" opens the panel in VS Code's modal editor (a centered dialog over the window, `workbench.editor.useModal`).
+   * The public API cannot target that group, so it goes through `_workbench.openWith` with the modal group (-4) and a
+   * custom editor on a placeholder resource; if that is unavailable it falls back to the floating window.
+   */
+  static register(s: Services): vscode.Disposable {
+    return vscode.window.registerCustomEditorProvider(
+      SETTINGS_VIEW_TYPE,
+      {
+        openCustomDocument: (uri) => ({ uri, dispose: () => undefined }),
+        resolveCustomEditor: (doc, panel) => {
+          if (doc.uri.scheme !== SETTINGS_SCHEME || SettingsPanel.current) {
+            panel.dispose();
+            return;
+          }
+          panel.title = 'Deployment';
+          panel.webview.options = SettingsPanel.webviewOptions(s);
+          SettingsPanel.current = new SettingsPanel(s, panel, SettingsPanel.pendingServer, true);
+          SettingsPanel.pendingServer = undefined;
+        },
+      } satisfies vscode.CustomReadonlyEditorProvider,
+      { webviewOptions: { retainContextWhenHidden: true } },
+    );
+  }
+
   static show(s: Services, serverId?: string): void {
     if (SettingsPanel.current) {
-      SettingsPanel.current.panel.reveal();
+      // reveal() would pull a modal editor out of its popup; it is on top already.
+      if (!SettingsPanel.current.modal) SettingsPanel.current.panel.reveal();
       void SettingsPanel.current.sendInit(serverId);
       return;
     }
+    const openIn = vscode.workspace.getConfiguration('iremote').get<string>('settings.openIn', 'popup');
+    if (openIn === 'popup' && vscode.workspace.getConfiguration('workbench.editor').get<string>('useModal', 'off') !== 'off') {
+      SettingsPanel.pendingServer = serverId;
+      const fallback = (why: string) => {
+        log.info(`Deployment popup unavailable (${why}), using a window`);
+        SettingsPanel.pendingServer = undefined;
+        if (!SettingsPanel.current) SettingsPanel.open(s, serverId, true);
+      };
+      // The editor is resolved before the command returns; nothing open afterwards means the internal command changed.
+      void Promise.resolve(vscode.commands.executeCommand('_workbench.openWith', settingsUri(), SETTINGS_VIEW_TYPE, [MODAL_GROUP, { pinned: true }])).then(
+        () => SettingsPanel.current || fallback('no editor opened'),
+        (e) => fallback(errorMessage(e)),
+      );
+      return;
+    }
+    SettingsPanel.open(s, serverId, openIn !== 'editor');
+  }
+
+  private static webviewOptions(s: Services): vscode.WebviewOptions {
+    return { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(s.context.extensionUri, 'dist', 'webview')] };
+  }
+
+  private static open(s: Services, serverId: string | undefined, float: boolean): void {
     const panel = vscode.window.createWebviewPanel('iremote.settings', 'Deployment', vscode.ViewColumn.Active, {
-      enableScripts: true,
+      ...SettingsPanel.webviewOptions(s),
       retainContextWhenHidden: true,
-      localResourceRoots: [vscode.Uri.joinPath(s.context.extensionUri, 'dist', 'webview')],
     });
     SettingsPanel.current = new SettingsPanel(s, panel, serverId);
-    if (vscode.workspace.getConfiguration('iremote').get<string>('settings.openIn', 'window') === 'window') void SettingsPanel.float(panel);
+    if (float) void SettingsPanel.float(panel);
   }
 
   /**
-   * PhpStorm shows Deployment as a dialog. Extensions cannot open modal windows, so the panel moves into its own
-   * floating window (it closes with OK / Cancel, as its only editor). The webview reloads on the move and re-sends
-   * "ready", which re-initializes it. The window is then made compact (no tab bar / title chrome) and kept on top so
-   * it reads as a dialog. Older VS Code without auxiliary windows (or these commands) keeps what it supports.
+   * Fallback for VS Code without modal editors: the panel moves into its own floating window (it closes with
+   * OK / Cancel, as its only editor). The webview reloads on the move and re-sends "ready", which re-initializes it.
+   * The window is then made compact (no tab bar / title chrome) and kept on top so it reads as a dialog.
    */
   private static async float(panel: vscode.WebviewPanel): Promise<void> {
     for (let i = 0; i < 25 && !panel.active; i++) await new Promise((r) => setTimeout(r, 20));
@@ -65,6 +127,7 @@ export class SettingsPanel {
     private readonly s: Services,
     private readonly panel: vscode.WebviewPanel,
     private initialServer?: string,
+    private readonly modal = false,
   ) {
     panel.iconPath = {
       light: vscode.Uri.joinPath(s.context.extensionUri, 'media', 'settings-light.svg'),

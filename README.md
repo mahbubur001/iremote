@@ -14,7 +14,7 @@ dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
 
 | PhpStorm | iRemote |
 |---|---|
-| Deployment settings (Connection / Mappings / Excluded Paths) | **Deployment Settings…** dialog with the same tabs, in its own floating window (`iremote.settings.openIn`) |
+| Deployment settings (Connection / Mappings / Excluded Paths) | **Deployment Settings…** dialog with the same tabs, opened as a popup over the window (`iremote.settings.openIn`) |
 | Server types SFTP, FTP, FTPS, WebDAV, Local or mounted folder | ✓ (FTPS explicit and implicit) |
 | Default server, "Visible only for this project" | ✓ (unchecked = shared across projects, mappings stay per project) |
 | Upload changed files automatically: Always / On explicit save / Never | ✓ |
@@ -89,7 +89,7 @@ Settings are stored in `.vscode/iremote.json` (validated by a JSON schema). Exam
 
 | Setting | Default | Description |
 |---|---|---|
-| `iremote.settings.openIn` | `window` | Open Deployment Settings in its own floating window (`window`) or as an editor tab (`editor`). |
+| `iremote.settings.openIn` | `popup` | Open Deployment Settings as a popup over the window (`popup`, VS Code's modal editor; falls back to `window` when `workbench.editor.useModal` is `off`), in its own floating window (`window`) or as an editor tab (`editor`). |
 | `iremote.remoteHost.openBehavior` | `remote` | Open files from Remote Host directly on the server, or the local mapped copy when it exists. |
 | `iremote.remoteHost.showHiddenFiles` | `true` | Show dot-files in Remote Host. |
 | `iremote.ssh.knownHostsFiles` | `[]` | Extra known_hosts files (like OpenSSH `UserKnownHostsFile`); `~/.ssh/known_hosts` is always used. |
