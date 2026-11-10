@@ -200,46 +200,6 @@ test('nvim auto-upload: created, renamed, deleted files and external changes ("A
   }
 });
 
-test('nvim PhpStorm import writes .vscode/iremote.json', async () => {
-  const base = await fs.mkdtemp(join(tmpdir(), 'iremote-nvim-import-'));
-  const root = join(base, 'wp');
-  await fs.mkdir(join(root, '.idea'), { recursive: true });
-  await fs.writeFile(
-    join(root, '.idea', 'webServers.xml'),
-    `<?xml version="1.0" encoding="UTF-8"?>
-<project version="4"><component name="WebServers"><option name="servers">
-  <webServer id="f1" name="shared ftp" url="http://ftp.example.com">
-    <fileTransfer host="ftp.example.com" port="21" rootFolder="/public_html" accessType="FTP" username="me" />
-  </webServer>
-</option></component></project>`,
-  );
-  await fs.writeFile(
-    join(root, '.idea', 'deployment.xml'),
-    `<?xml version="1.0" encoding="UTF-8"?>
-<project version="4"><component name="PublishConfigData" autoUpload="Always" serverName="shared ftp">
-  <serverData><paths name="shared ftp"><serverdata><mappings>
-    <mapping deploy="/" local="$PROJECT_DIR$" web="/" />
-  </mappings></serverdata></paths></serverData>
-</component></project>`,
-  );
-  const { child, client } = startServer();
-  try {
-    await init(client, base);
-    const r = await client.call<{ imported: number; root: string }>('importPhpStorm', { root });
-    assert.equal(r.imported, 1);
-    const cfg = JSON.parse(await read(join(root, '.vscode', 'iremote.json')));
-    assert.equal(cfg.servers[0].type, 'ftp');
-    assert.equal(cfg.servers[0].host, 'ftp.example.com');
-    assert.equal(cfg.defaultServer, cfg.servers[0].id);
-    assert.equal(cfg.options.autoUpload, 'always');
-    const servers = await client.call<{ servers: { name: string }[] }>('servers', { path: root });
-    assert.deepEqual(servers.servers.map((s) => s.name), ['shared ftp']);
-  } finally {
-    await stopServer(client, child);
-    await fs.rm(base, { recursive: true, force: true });
-  }
-});
-
 test('nvim settings: read, validate + save, test connection, secrets', async () => {
   const base = await fs.mkdtemp(join(tmpdir(), 'iremote-nvim-settings-'));
   const root = join(base, 'fresh');

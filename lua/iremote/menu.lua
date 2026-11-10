@@ -13,7 +13,6 @@ local ACTIONS = {
   { "Open in browser", "open_in_browser" },
   { "File transfers", "transfers" },
   { "Transfer log", "show_log" },
-  { "Import PhpStorm deployment", "import_phpstorm" },
   { "Cancel transfers", "cancel" },
   { "Disconnect", "disconnect" },
   { "Forget saved password / host key", "forget_credentials" },

@@ -93,8 +93,7 @@ export type SettingsToHost =
   | { type: 'test'; requestId: number; projectKey: string; server: UiServer; secret?: SecretChange }
   | { type: 'detectRoot'; requestId: number; projectKey: string; server: UiServer; secret?: SecretChange }
   | { type: 'browseRemote'; requestId: number; projectKey: string; server: UiServer; secret?: SecretChange; path: string }
-  | { type: 'browseLocal'; requestId: number; projectKey: string; current: string; folders: boolean; relative: boolean }
-  | { type: 'importPhpStorm' };
+  | { type: 'browseLocal'; requestId: number; projectKey: string; current: string; folders: boolean; relative: boolean };
 
 export type SettingsToWebview =
   | SettingsInit

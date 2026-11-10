@@ -4,9 +4,7 @@ import { basename } from 'node:path';
 import type { Services } from '../services';
 import type { Project } from '../config/ConfigStore';
 import type { AutoUploadMode } from '../config/schema';
-import { importFromProject } from '../config/PhpStormImporter';
 import { remoteUri } from '../fs/uri';
-import { log } from '../util/log';
 import { defaultOrPick, groupByProject, guarded, pickServer, reportResult, resolveTargets } from './helpers';
 import { SyncPanel } from '../webviews/SyncPanel';
 import { SettingsPanel } from '../webviews/SettingsPanel';
@@ -200,47 +198,6 @@ export const registerDeploymentCommands = (s: Services): vscode.Disposable[] => 
         const url = config.target(server).mapper.webUrlForLocal(local.fsPath);
         if (!url) return void vscode.window.showWarningMessage(`No web URL for this file on ${server.name}. Set the Web server URL and web path mapping.`);
         await vscode.env.openExternal(vscode.Uri.parse(url));
-      }),
-    ),
-
-    vscode.commands.registerCommand(
-      'iremote.importPhpStorm',
-      guarded('Import PhpStorm configuration', async () => {
-        let imported = 0;
-        for (const project of config.projects) {
-          const result = await importFromProject(project.root);
-          if (!result || result.servers.length === 0) continue;
-          let servers = result.servers;
-          if (project.config.servers.length) {
-            const choice = await vscode.window.showInformationMessage(
-              `${project.folder.name}: import ${result.servers.length} PhpStorm server(s)?`,
-              { modal: true, detail: `${project.config.servers.length} server(s) are already configured.` },
-              'Merge (keep existing)',
-              'Replace',
-            );
-            if (!choice) continue;
-            if (choice.startsWith('Merge')) {
-              const existing = new Set(project.config.servers.map((x) => x.id));
-              servers = [...project.config.servers, ...result.servers.filter((x) => !existing.has(x.id))];
-            }
-          }
-          await config.saveProject(project, {
-            ...project.config,
-            servers,
-            defaultServer: result.defaultServer ?? project.config.defaultServer,
-            options: project.config.servers.length ? project.config.options : result.options,
-          });
-          imported += result.servers.length;
-          result.warnings.forEach((w) => log.info(`Import (${project.folder.name}): ${w}`));
-          if (result.warnings.length) {
-            void vscode.window.showWarningMessage(`Imported with notes: ${result.warnings.join(' ')}`);
-          }
-        }
-        if (imported === 0) {
-          void vscode.window.showInformationMessage('No PhpStorm deployment configuration (.idea/deployment.xml or webServers.xml) was found in the workspace.');
-          return;
-        }
-        void vscode.window.showInformationMessage(`Imported ${imported} server(s) from PhpStorm.`, 'Open Settings').then((c) => c && SettingsPanel.show(s));
       }),
     ),
 

@@ -344,8 +344,6 @@ const showMenu = (items: MenuItem[], x: number, y: number, level = 0, minWidth =
 
 const addItems = (): MenuItem[] => [
   ...(Object.keys(TYPE_LABELS) as ServerType[]).map((t): MenuItem => ({ label: TYPE_LABELS[t], icon: () => typeIcon(t), run: () => addServer(t) })),
-  'separator',
-  { label: 'Import from PhpStorm…', icon: 'cloud-download', run: () => post({ type: 'importPhpStorm' }) },
 ];
 
 const showAddMenu = (anchor: HTMLElement) => {
@@ -1043,8 +1041,7 @@ const renderContent = () => {
         'div',
         { class: 'placeholder' },
         icon('server-environment'),
-        h('p', {}, 'Add a server with + or import an existing PhpStorm configuration.'),
-        button('Import from PhpStorm', () => post({ type: 'importPhpStorm' }), { icon: 'cloud-download' }),
+        h('p', {}, 'Add a server with +.'),
       ),
     );
     return;

@@ -37,7 +37,7 @@ export interface ServerConfig {
   rootPath: string;
   /** Web server URL (e.g. https://example.com). */
   webUrl?: string;
-  /** FTP passive mode. basic-ftp only supports passive transfers, kept for PhpStorm parity/import. */
+  /** FTP passive mode. basic-ftp only supports passive transfers, kept for PhpStorm parity. */
   passive?: boolean;
   /** Accept self-signed / untrusted TLS certificates (FTPS/WebDAV over https). */
   allowUntrustedCertificate?: boolean;

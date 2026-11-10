@@ -5,7 +5,7 @@ The same deployment engine as the VS Code extension, driven from Neovim. It read
 
 Covers upload / download, automatic upload (on `:write`, new files, delete / rename propagation and external changes),
 compare with the deployed version, the **Remote Host** browser (a neo-tree tab, with direct remote editing), **Sync with
-Deployed**, PhpStorm import, default server and auto-upload mode, keychain passwords and host-key / TLS trust. Servers are
+Deployed**, default server and auto-upload mode, keychain passwords and host-key / TLS trust. Servers are
 set up in the **Deployment settings** dialog (`:IRemote settings`), which writes `.vscode/iremote.json`; `:IRemote`
 alone opens a menu with every action.
 
@@ -68,7 +68,6 @@ require("neo-tree").setup({
 | `:IRemote browser` | Open the file's web URL (mapping `web` + server `webUrl`) |
 | `:IRemote remote [float\|left\|right\|current]` | Remote Host (neo-tree `iremote` source) |
 | `:IRemote sync [paths…]` | Sync with Deployed (default: the project root) |
-| `:IRemote import [dir]` | Import PhpStorm's `.idea/deployment.xml` / `webServers.xml` |
 | `:IRemote transfers` | File Transfer view: live queue with progress and history (`x` cancel, `c` clear finished) |
 | `:IRemote log` | Transfer and connection log |
 | `:IRemote cancel` / `disconnect` / `reload` | Cancel transfers, close connections, re-read config |
@@ -146,9 +145,6 @@ action. Identical files are hidden (`i` shows them).
 | `r` / `c` | Compare again / compare again by content (hashes files whose size matches) |
 | `q` | Close |
 
-PhpStorm projects: `:IRemote import` reads `.idea/deployment.xml`, `webServers.xml` and `sshConfigs.xml` (plus
-IDE-level servers when needed) and writes `.vscode/iremote.json`, merging with or replacing existing servers.
-
 `require("iremote").statusline()` returns e.g. `󰒍 Production ↑` (`↑` = automatic upload on) for your statusline, e.g.
 as a lualine component: `{ function() return require("iremote").statusline() end }`.
 
@@ -186,5 +182,5 @@ VS Code-free parts of `src/config` — the very code the extension runs — plus
 prompts). The Lua plugin (`lua/iremote`, `plugin/iremote.lua`) talks to it with newline-delimited JSON-RPC over stdio;
 prompts (passwords, host keys, conflicts) are requests from the server back to Neovim, answered with `vim.ui.select` /
 `vim.ui.input` / `inputsecret()`. Server modules: `remote.ts` (Remote Host), `sync.ts`, `autoUpload.ts`,
-`import.ts`, `settings.ts`; the neo-tree source is `lua/iremote/neotree/`, the Sync view `lua/iremote/sync.lua`, the settings dialog
+`settings.ts`; the neo-tree source is `lua/iremote/neotree/`, the Sync view `lua/iremote/sync.lua`, the settings dialog
 `lua/iremote/settings.lua`, the action menu `lua/iremote/menu.lua`.

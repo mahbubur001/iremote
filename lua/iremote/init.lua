@@ -324,24 +324,6 @@ function M.sync(paths, server_id)
   require("iremote.sync").open(paths, server_id)
 end
 
---- Imports PhpStorm's .idea/deployment.xml + webServers.xml into .vscode/iremote.json.
-function M.import_phpstorm(root)
-  root = root or vim.fn.getcwd()
-  call("importPhpStorm", { root = root }, function(r)
-    if not r or r == vim.NIL then
-      return
-    end
-    if r.imported == 0 then
-      return notify("No PhpStorm deployment configuration (.idea/deployment.xml or webServers.xml) found in " .. root, vim.log.levels.WARN)
-    end
-    status_cache = {}
-    notify(string.format("Imported %d server(s) from PhpStorm into %s/.vscode/iremote.json", r.imported, r.root))
-    for _, w in ipairs(r.warnings or {}) do
-      notify(w, vim.log.levels.WARN)
-    end
-  end)
-end
-
 --- neo-tree `event_handlers` that propagate file operations made in neo-tree (create / delete / rename / move) to the
 --- default server, following the project's automatic-upload options.
 function M.neo_tree_event_handlers()

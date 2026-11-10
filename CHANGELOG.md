@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.4
+
+- Removed: PhpStorm import (deployment configuration, SSH configurations, Neovim `:IRemote import`).
+
 ## 1.2.3
 
 - Deployment Settings looks like PhpStorm's dialog: server list with type icons, + / − / default toolbar and a

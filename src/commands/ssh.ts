@@ -4,15 +4,12 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { Services } from '../services';
 import type { ServerConfig } from '../config/schema';
-import { findIdeOptionsDirs, parseSshConfigs, type ImportedSshConfig } from '../config/PhpStormImporter';
 import {
   authorizedKeysCommand,
   describe,
   fromDestination,
   fromServer,
   fromSshConfigAlias,
-  hostKey,
-  phpStormSshToServer,
   mergeHosts,
   parseDestination,
   parseOpenSshHosts,
@@ -38,7 +35,7 @@ const SOURCE_LABELS: Record<SshHost['source'], string> = {
 
 const readIf = (p: string): Promise<string | undefined> => fs.readFile(p, 'utf8').then((t) => t, () => undefined);
 
-type PickItem = vscode.QuickPickItem & { host?: SshHost; action?: 'new' | 'settings' | 'import' };
+type PickItem = vscode.QuickPickItem & { host?: SshHost; action?: 'new' | 'settings' };
 
 export class SshSessions {
   private readonly keyButton: vscode.QuickInputButton = { iconPath: new vscode.ThemeIcon('key'), tooltip: 'Install Public Key on Host…' };
@@ -48,44 +45,6 @@ export class SshSessions {
 
   private get state(): vscode.Memento {
     return this.s.context.globalState;
-  }
-
-  /** PhpStorm SSH configurations: .idea/sshConfigs.xml of open folders plus the newest IDE's options/sshConfigs.xml. */
-  private async phpStormSshConfigs(): Promise<ImportedSshConfig[]> {
-    const files = (vscode.workspace.workspaceFolders ?? []).map((f) => join(f.uri.fsPath, '.idea', 'sshConfigs.xml'));
-    for (const dir of await findIdeOptionsDirs()) {
-      const file = join(dir, 'sshConfigs.xml');
-      if (await readIf(file)) {
-        files.push(file);
-        break;
-      }
-    }
-    const configs: ImportedSshConfig[] = [];
-    for (const file of files) {
-      const xml = await readIf(file);
-      if (xml) for (const c of parseSshConfigs(xml)) if (!configs.some((x) => x.id === c.id)) configs.push(c);
-    }
-    return configs;
-  }
-
-  /** One-time copy of PhpStorm's SSH configurations into iRemote's global servers (skips hosts already there). */
-  async importPhpStorm(): Promise<void> {
-    const configs = await this.phpStormSshConfigs();
-    if (configs.length === 0) {
-      void vscode.window.showInformationMessage('No PhpStorm SSH configurations found.');
-      return;
-    }
-    const existing = this.s.config.globalServers;
-    const taken = new Set(existing.flatMap((sv) => [sv.id, hostKey(sv.username, sv.host, sv.port)]));
-    const added = configs.map(phpStormSshToServer).filter((sv) => !taken.has(sv.id) && !taken.has(hostKey(sv.username, sv.host, sv.port)));
-    if (added.length === 0) {
-      void vscode.window.showInformationMessage('All PhpStorm SSH configurations are already in iRemote.');
-      return;
-    }
-    await this.s.config.saveGlobal({ version: 1, servers: [...existing, ...added] });
-    void vscode.window.showInformationMessage(
-      `Imported ${added.length} PhpStorm SSH configuration${added.length === 1 ? '' : 's'} as global servers. Each password is asked once and saved in the keychain.`,
-    );
   }
 
   async hosts(): Promise<SshHost[]> {
@@ -130,9 +89,6 @@ export class SshSessions {
           };
         }),
         { label: '', kind: vscode.QuickPickItemKind.Separator },
-        ...(hosts.some((h) => h.source === 'iremote')
-          ? []
-          : [{ label: '$(cloud-download) Import PhpStorm SSH Configurations…', action: 'import' as const, alwaysShow: true }]),
         { label: '$(add) New SSH Session…', action: 'new', alwaysShow: true },
         { label: '$(gear) Deployment Settings…', action: 'settings', alwaysShow: true },
       ];
@@ -163,12 +119,6 @@ export class SshSessions {
       qp.onDidAccept(async () => {
         const item = qp.selectedItems[0];
         if (item?.host) return finish(item.host);
-        if (item?.action === 'import') {
-          qp.busy = true;
-          await guarded('Import PhpStorm SSH configurations', () => this.importPhpStorm())();
-          await build();
-          return;
-        }
         if (item?.action === 'settings') {
           finish(undefined);
           void vscode.commands.executeCommand('iremote.openSettings');
@@ -311,7 +261,6 @@ export const registerSshCommands = (s: Services): { sessions: SshSessions; dispo
   const sessions = new SshSessions(s);
   const disposables = [
     vscode.commands.registerCommand('iremote.ssh.startSession', guarded('Start SSH session', () => sessions.start())),
-    vscode.commands.registerCommand('iremote.ssh.importPhpStorm', guarded('Import PhpStorm SSH configurations', () => sessions.importPhpStorm())),
     vscode.commands.registerCommand('iremote.ssh.installPublicKey', guarded('Install public key', () => sessions.installKey())),
     vscode.commands.registerCommand(
       'iremote.remote.openSshSession',

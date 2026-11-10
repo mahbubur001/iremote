@@ -2,7 +2,7 @@
   "name": "iremote",
   "displayName": "iRemote — Deployment & Remote Host",
   "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "publisher": "itemcoder",
   "license": "MIT",
   "repository": {
@@ -37,7 +37,6 @@
   "main": "./dist/extension.js",
   "activationEvents": [
     "workspaceContains:.vscode/iremote.json",
-    "workspaceContains:.idea/deployment.xml",
     "onFileSystem:iremote",
     "onTerminalProfile:iremote.ssh"
   ],
@@ -120,11 +119,6 @@
       {
         "command": "iremote.browseRemoteHost",
         "title": "Browse Remote Host",
-        "category": "iRemote"
-      },
-      {
-        "command": "iremote.importPhpStorm",
-        "title": "Import PhpStorm Deployment Configuration",
         "category": "iRemote"
       },
       {
@@ -291,12 +285,6 @@
         "title": "Open SSH Session Here",
         "category": "iRemote",
         "icon": "$(terminal)"
-      },
-      {
-        "command": "iremote.ssh.importPhpStorm",
-        "title": "Import PhpStorm SSH Configurations",
-        "category": "iRemote",
-        "icon": "$(cloud-download)"
       }
     ],
     "viewsContainers": {
@@ -335,7 +323,7 @@
     "viewsWelcome": [
       {
         "view": "iremote.remoteHost",
-        "contents": "No deployment servers configured.\n[Configure Deployment](command:iremote.openSettings)\n[Import from PhpStorm](command:iremote.importPhpStorm)",
+        "contents": "No deployment servers configured.\n[Configure Deployment](command:iremote.openSettings)",
         "when": "!iremote.hasServers"
       }
     ],
@@ -524,11 +512,6 @@
           "group": "1_misc@1"
         },
         {
-          "command": "iremote.importPhpStorm",
-          "when": "view == iremote.remoteHost",
-          "group": "1_misc@2"
-        },
-        {
           "command": "iremote.cancelTransfers",
           "when": "view == iremote.transfers",
           "group": "navigation@1"
@@ -542,11 +525,6 @@
           "command": "iremote.ssh.startSession",
           "when": "view == terminal",
           "group": "navigation@9"
-        },
-        {
-          "command": "iremote.ssh.importPhpStorm",
-          "when": "view == iremote.remoteHost",
-          "group": "1_misc@3"
         }
       ],
       "view/item/context": [

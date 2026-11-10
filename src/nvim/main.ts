@@ -21,7 +21,6 @@ import { fetchToTemp, projectFor, remotePathFor, resolveTarget, summary, type Co
 import { registerRemote } from './remote';
 import { registerSync } from './sync';
 import { registerAutoUpload } from './autoUpload';
-import { registerImport } from './import';
 import { registerSettings } from './settings';
 
 // stdout is the protocol channel: anything a dependency prints must not corrupt it.
@@ -79,7 +78,6 @@ const createConflictPrompt = (queue: TransferQueue) => {
 
 registerRemote(rpc, ready);
 registerSync(rpc, ready);
-registerImport(rpc, ready);
 registerSettings(rpc, ready);
 const autoUpload = registerAutoUpload(rpc, ready);
 

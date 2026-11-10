@@ -2,9 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseSshConfigs } from '../../src/config/PhpStormImporter';
 import {
   authorizedKeysCommand,
   fromDestination,
@@ -14,22 +13,8 @@ import {
   parseDestination,
   parseOpenSshHosts,
   parsePublicKey,
-  phpStormSshToServer,
 } from '../../src/ssh/hosts';
-import { normalizeGlobalConfig } from '../../src/config/normalize';
 import type { ServerConfig } from '../../src/config/schema';
-
-const PHPSTORM_XML = `<application>
-  <component name="SshConfigs">
-    <configs>
-      <sshConfig authType="PASSWORD" host="199.167.202.14" id="a1" port="2200" nameFormat="DESCRIPTIVE" username="harmony" useOpenSSHConfig="false" />
-      <sshConfig authType="PASSWORD" host="radiustheme.net" id="b2" port="22" customName="Rt - radiustheme.net" nameFormat="CUSTOM" username="rt" useOpenSSHConfig="true">
-        <option name="customName" value="Rt - radiustheme.net" />
-      </sshConfig>
-      <sshConfig authType="KEY_PAIR" host="k.example.com" id="c3" keyPath="$USER_HOME$/.ssh/id_ed25519" nameFormat="DESCRIPTIVE" username="deploy" />
-    </configs>
-  </component>
-</application>`;
 
 const server = (fields: Partial<ServerConfig>): ServerConfig => ({
   id: 's',
@@ -41,34 +26,6 @@ const server = (fields: Partial<ServerConfig>): ServerConfig => ({
   excludedLocal: [],
   excludedRemote: [],
   ...fields,
-});
-
-test('IDE-level PhpStorm sshConfigs.xml (<application> root) is parsed, with custom names', () => {
-  const configs = parseSshConfigs(PHPSTORM_XML);
-  assert.deepEqual(
-    configs.map((c) => [c.id, c.host, c.port, c.username, c.authType, c.nameFormat, c.customName]),
-    [
-      ['a1', '199.167.202.14', 2200, 'harmony', 'PASSWORD', 'DESCRIPTIVE', undefined],
-      ['b2', 'radiustheme.net', 22, 'rt', 'PASSWORD', 'CUSTOM', 'Rt - radiustheme.net'],
-      ['c3', 'k.example.com', undefined, 'deploy', 'KEY_PAIR', 'DESCRIPTIVE', undefined],
-    ],
-  );
-});
-
-test('PhpStorm SSH configurations import as valid global SFTP servers with PhpStorm names', () => {
-  const servers = parseSshConfigs(PHPSTORM_XML).map(phpStormSshToServer);
-  const errors: string[] = [];
-  const clean = normalizeGlobalConfig({ version: 1, servers }, errors);
-  assert.deepEqual(errors, []);
-  assert.deepEqual(
-    clean.servers.map((s) => [s.id, s.name, s.type, s.port, s.auth]),
-    [
-      ['ssh-a1', 'harmony@199.167.202.14:2200', 'sftp', 2200, 'password'],
-      ['ssh-b2', 'Rt - radiustheme.net', 'sftp', 22, 'password'],
-      ['ssh-c3', 'deploy@k.example.com:22', 'sftp', 22, 'key'],
-    ],
-  );
-  assert.equal(clean.servers[2].privateKeyPath, `${homedir()}/.ssh/id_ed25519`);
 });
 
 test('OpenSSH config: concrete Host aliases only', () => {

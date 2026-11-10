@@ -28,8 +28,7 @@ dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
 | Edit remote file | ✓ native editor via the `iremote://` file system; saving writes to the server |
 | Notify about remote changes | ✓ open remote files are re-checked when VS Code regains focus |
 | File Transfer tool window | ✓ panel with direction, progress, duration and errors |
-| Import existing configuration | ✓ reads `.idea/deployment.xml`, `webServers.xml`, `sshConfigs.xml` |
-| Tools \| Start SSH Session… | ✓ **Start SSH Session…** lists your iRemote SFTP servers (project and global) and `~/.ssh/config` hosts; **Import PhpStorm SSH Configurations** copies PhpStorm's SSH list in once; also **SSH Session…** in the terminal's new-terminal dropdown and **Open SSH Session Here** in Remote Host |
+| Tools \| Start SSH Session… | ✓ **Start SSH Session…** lists your iRemote SFTP servers (project and global) and `~/.ssh/config` hosts; also **SSH Session…** in the terminal's new-terminal dropdown and **Open SSH Session Here** in Remote Host |
 
 ### Security
 
@@ -50,8 +49,6 @@ dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
 2. Click **+**, pick a server type, fill in the Connection tab and press **Test Connection**.
 3. On the **Mappings** tab map a local folder to a deployment path (relative to the root path).
 4. Mark the server as default (★) and choose an automatic upload mode in **Options**.
-
-Already using PhpStorm? Run **iRemote: Import PhpStorm Deployment Configuration**.
 
 ## Configuration file
 
@@ -142,7 +139,7 @@ Press F5 in the `iremote` folder to run the extension from source, or `npm run p
 src/
   protocol/   SFTP (ssh2), FTP/FTPS (basic-ftp), WebDAV (webdav), Local — one RemoteClient contract, no vscode imports
   core/       ConnectionPool, TransferQueue, PathMapper, StateCache, Deployer, SyncEngine, ServerManager
-  config/     schema, normalization, ConfigStore, Credentials (keychain, known_hosts), PhpStorm importer
+  config/     schema, normalization, ConfigStore, Credentials (keychain, known_hosts)
   fs/         iremote:// FileSystemProvider (direct remote editing)
   features/   AutoUploader, RemoteChangeMonitor
   views/      Remote Host tree, File Transfer view, status bar, decorations
@@ -158,4 +155,3 @@ lua/, plugin/ Neovim plugin (Lua) that drives dist/nvim/iremote.js
 - Desktop VS Code only (raw TCP sockets are not available in vscode.dev).
 - FTP active mode is not supported (passive / EPSV only).
 - WebDAV cannot set permissions or modification times.
-- Passwords stored by PhpStorm cannot be imported; you are asked once and can save them in the keychain.

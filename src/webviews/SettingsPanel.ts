@@ -180,10 +180,6 @@ export class SettingsPanel {
         return;
       case 'save':
         return this.save(m.projects, m.secrets, m.close);
-      case 'importPhpStorm':
-        await vscode.commands.executeCommand('iremote.importPhpStorm');
-        await this.sendInit();
-        return;
       case 'test':
         return this.withTempClient(m.requestId, m.server, m.secret, async (c) => {
           const root = m.server.rootPath || '/';

@@ -65,9 +65,9 @@ Layers, lowest first:
   `globalStorage/servers.json` (servers not "visible only for this project"; their mappings stay per project in
   `globalServerData`). `normalize.ts` sanitizes everything read from disk or the UI; `schema.ts` holds the TS types and
   defaults, and `schemas/iremote.schema.json` validates the file in the editor — keep the two in sync. Secrets live only
-  in SecretStorage (`Credentials`), never in the JSON. `PhpStormImporter` reads `.idea/*.xml`.
+  in SecretStorage (`Credentials`), never in the JSON.
 - **`src/nvim/`** — the Neovim server (`dist/nvim/iremote.js`): `main.ts` (deploy basics), `remote.ts` (Remote Host),
-  `sync.ts`, `autoUpload.ts` (save / create / delete / rename / external-change watcher), `import.ts`; shared state in
+  `sync.ts`, `autoUpload.ts` (save / create / delete / rename / external-change watcher); shared state in
   `context.ts`. Newline-delimited JSON-RPC over stdio (`rpc.ts`),
   `NvimConfig` (same `.vscode/iremote.json` + VS Code's global servers file), `NvimCredentials` (system keychain via
   `security` / `secret-tool`, prompts relayed to Neovim). Must not import `vscode` — its esbuild config does not mark

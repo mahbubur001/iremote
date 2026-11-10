@@ -36,9 +36,6 @@ local subcommands = {
       return vim.fn.fnamemodify(vim.fn.expand(p), ":p"):gsub("/$", "")
     end, a) or nil)
   end,
-  import = function(a)
-    require("iremote").import_phpstorm(a[1] and vim.fn.fnamemodify(a[1], ":p") or nil)
-  end,
   transfers = function()
     require("iremote").transfers()
   end,
@@ -82,7 +79,7 @@ end, {
     if words[2] == "remote" then
       return { "float", "left", "right", "current" }
     end
-    if words[2] == "sync" or words[2] == "import" then
+    if words[2] == "sync" then
       return vim.fn.getcompletion(arg, "file")
     end
     return {}

@@ -68,7 +68,7 @@ storage (`servers.json`), so every project can use it. Mappings and excluded pat
 | `jumpHost` | SFTP | Bastion as `user@host:port`. |
 | `rootPath` | all | Root on the server; deployment paths are relative to it. For `local`, a local directory. |
 | `webUrl` | all | Web server URL, used for *Open in Browser*. |
-| `passive` | FTP | Kept for PhpStorm import; only passive / EPSV transfers are supported. |
+| `passive` | FTP | Only passive / EPSV transfers are supported. |
 | `allowUntrustedCertificate` | FTPS, WebDAV | Allow self-signed certificates after you confirm the fingerprint. |
 | `trustedCertificateFingerprint` | FTPS, WebDAV | Pinned SHA-256 fingerprint (written when you choose to pin). |
 | `webdavAuth` | WebDAV | `basic`, `digest`, `none` |
@@ -94,9 +94,8 @@ deploys to `/var/www/cdn/app.js` and `public/index.php` to `/var/www/html/public
 
 ## Version control
 
-`.vscode/iremote.json` is the counterpart of PhpStorm's `.idea/deployment.xml`: it holds mappings, excluded paths, the
-default server and project-only servers (host, user, paths) — never passwords. Shared servers live outside the project,
-in VS Code's global storage, like PhpStorm's IDE-level `options/webServers.xml`.
+`.vscode/iremote.json` holds mappings, excluded paths, the default server and project-only servers (host, user, paths)
+— never passwords. Shared servers live outside the project, in VS Code's global storage.
 
 - **Commit it** to give a team the same deployment setup.
 - **Ignore it** for personal setups or public repositories (host names and user names are visible in the file).
@@ -123,18 +122,8 @@ terminal. The host list merges, first source winning on the same `user@host:port
 2. Concrete `Host` aliases in `~/.ssh/config` (connected through `~/.ssh/config`, agent and identity files).
 3. Hosts typed as `user@host:port` (kept as recent; remove one with the × button).
 
-**iRemote: Import PhpStorm SSH Configurations** (also offered in the list while it has no iRemote servers, and in the
-Remote Host view's `…` menu) copies PhpStorm's SSH configurations into the global servers once: names as in PhpStorm,
-root path `/`, hosts already present skipped. PhpStorm's passwords cannot be read, so each is asked on first connect.
-
 Passwords are asked once and can be saved to the keychain, exactly like for file transfers. The key button on a host
 (or **iRemote: Install Public Key on SSH Host…**) appends a `~/.ssh/*.pub` key to the server's
 `~/.ssh/authorized_keys` (creating it with mode 600 and `~/.ssh` with 700), verifies a key login, and from then on the
 session list uses that key for the host. For servers in your iRemote config this applies to SSH sessions only;
 deployment keeps the authentication chosen in Deployment Settings.
-
-## Importing from PhpStorm
-
-**iRemote: Import PhpStorm Deployment Configuration** reads `.idea/deployment.xml`, `.idea/webServers.xml` and
-`.idea/sshConfigs.xml`. PhpStorm's stored passwords cannot be imported; you are asked for them on first connect and can
-save them to the keychain.

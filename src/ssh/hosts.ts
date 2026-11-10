@@ -1,6 +1,4 @@
-import { homedir } from 'node:os';
-import type { GlobalServer, ServerConfig, SftpAuth } from '../config/schema';
-import type { ImportedSshConfig } from '../config/PhpStormImporter';
+import type { ServerConfig } from '../config/schema';
 
 /**
  * The SSH session host list (PhpStorm: Tools | Start SSH Session…). Pure: no `vscode` import, so it is unit tested
@@ -50,27 +48,6 @@ export const fromServer = (server: ServerConfig, scope?: 'project' | 'global'): 
   scope,
   server,
 });
-
-/**
- * A PhpStorm SSH configuration as an iRemote global SFTP server (one-time import). Its own auth type wins over
- * "Parse config file ~/.ssh/config", which only adds settings; the display name follows PhpStorm.
- */
-export const phpStormSshToServer = (c: ImportedSshConfig): GlobalServer => {
-  const type = c.authType?.toUpperCase();
-  const auth: SftpAuth = type === 'KEY_PAIR' && c.keyPath ? 'key' : type === 'OPEN_SSH' ? 'openssh' : 'password';
-  return {
-    id: `ssh-${c.id}`.replace(/[^A-Za-z0-9._-]/g, '-'),
-    name: c.nameFormat?.toUpperCase() === 'CUSTOM' && c.customName ? c.customName : describe(c),
-    type: 'sftp',
-    host: c.host,
-    port: c.port ?? 22,
-    username: c.username,
-    auth,
-    privateKeyPath: auth === 'key' ? c.keyPath?.replace(/\$USER_HOME\$/g, homedir()) : undefined,
-    sshConfigHost: auth === 'openssh' ? c.host : undefined,
-    rootPath: '/',
-  };
-};
 
 /** Concrete `Host` aliases in an OpenSSH config (patterns with *, ? or ! are templates, not hosts). */
 export const parseOpenSshHosts = (text: string): string[] => {
