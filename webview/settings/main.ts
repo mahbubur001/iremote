@@ -38,12 +38,12 @@ const TYPE_LABELS: Record<ServerType, string> = {
   local: 'Local or mounted folder',
 };
 const TYPE_ICONS: Record<ServerType, string> = {
-  sftp: 'lock',
-  ftp: 'globe',
-  ftps: 'shield',
-  'ftps-implicit': 'shield',
-  webdav: 'cloud',
-  local: 'folder',
+  sftp: 'send',
+  ftp: 'send',
+  ftps: 'send',
+  'ftps-implicit': 'send',
+  webdav: 'globe',
+  local: 'device-desktop',
 };
 const DEFAULT_PORTS: Partial<Record<ServerType, number>> = { sftp: 22, ftp: 21, ftps: 21, 'ftps-implicit': 990 };
 const ENCODINGS = ['utf8', 'latin1', 'ascii', 'utf16le'];
@@ -96,8 +96,9 @@ let sidebarEl: HTMLElement;
 let contentEl: HTMLElement;
 let footerEl: HTMLElement;
 
+/** PhpStorm-style row: label on the left, control on the right; hints are tooltips instead of extra lines. */
 const row = (label: string, control: Node, hint?: string, id?: string) =>
-  h('div', { class: 'form-row' }, h('label', { for: id }, label), h('div', { class: 'control' }, control, hint ? h('div', { class: 'hint' }, hint) : null));
+  h('div', { class: 'form-row' }, h('label', { for: id, title: hint }, label), h('div', { class: 'control', title: hint }, control));
 
 let fieldSeq = 0;
 const textInput = (
@@ -130,7 +131,7 @@ const textInput = (
 const checkbox = (label: string, checked: boolean, onChange: (v: boolean) => void, hint?: string) => {
   const id = `cb${++fieldSeq}`;
   const input = h('input', { type: 'checkbox', id, checked, on: { change: () => onChange(input.checked) } });
-  return h('div', { class: 'checkbox-row' }, input, h('label', { for: id }, label), hint ? h('div', { class: 'hint' }, hint) : null);
+  return h('div', { class: 'checkbox-row', title: hint }, input, h('label', { for: id }, label));
 };
 
 const select = <T extends string>(value: T, options: [T, string][], onChange: (v: T) => void, id?: string) => {
@@ -146,7 +147,7 @@ const button = (label: string, onClick: () => void, opts: { primary?: boolean; i
     label,
   );
 
-const withBrowse = (input: HTMLInputElement, onBrowse: () => void, title = 'Browse…') => h('div', { class: 'input-with-button' }, input, iconButton('folder-opened', title, onBrowse));
+const withBrowse = (input: HTMLInputElement, onBrowse: () => void, title = 'Browse…') => h('div', { class: 'adorned' }, input, iconButton('folder-opened', title, onBrowse));
 
 // ---- Remote browser (modal) ----------------------------------------------------------------------
 
@@ -283,24 +284,73 @@ const addServer = (type: ServerType) => {
   tab = 'connection';
   markDirty();
   render();
-  document.getElementById('server-name')?.focus();
+  startRename(server);
 };
 
-const showAddMenu = (anchor: HTMLElement) => {
-  document.querySelector('.popup-menu')?.remove();
-  const rect = anchor.getBoundingClientRect();
-  const menu = h(
-    'div',
-    { class: 'popup-menu', role: 'menu' },
-    ...(Object.keys(TYPE_LABELS) as ServerType[]).map((t) =>
-      h('button', { role: 'menuitem', on: { click: () => (menu.remove(), addServer(t)) } }, icon(TYPE_ICONS[t]), TYPE_LABELS[t]),
-    ),
-  );
-  menu.style.left = `${rect.left}px`;
-  menu.style.top = `${rect.bottom + 2}px`;
+/** Floating menu (toolbar "+" and the server list's context menu); items with `sub` open a submenu on hover. */
+type MenuItem = { label: string; icon?: string | (() => HTMLElement); selected?: boolean; keys?: string; disabled?: boolean; run?: () => void; sub?: MenuItem[] } | 'separator';
+
+const closeMenus = () => document.querySelectorAll('.popup-menu').forEach((m) => m.remove());
+
+// Pressing outside any menu closes them (one listener, so a stale handler can't close the next menu).
+document.addEventListener('mousedown', (e) => {
+  if (!(e.target as Element | null)?.closest?.('.popup-menu')) closeMenus();
+}, true);
+
+const showMenu = (items: MenuItem[], x: number, y: number, level = 0, minWidth = 0): HTMLElement => {
+  document.querySelectorAll('.popup-menu').forEach((m) => Number((m as HTMLElement).dataset.level) >= level && m.remove());
+  const menu = h('div', { class: 'popup-menu', role: 'menu', 'data-level': String(level) });
+  if (minWidth) menu.style.minWidth = `${minWidth}px`;
+  for (const item of items) {
+    if (item === 'separator') {
+      menu.append(h('div', { class: 'menu-separator', role: 'separator' }));
+      continue;
+    }
+    const el = h(
+      'button',
+      {
+        role: 'menuitem',
+        class: item.selected ? 'selected' : '',
+        disabled: item.disabled,
+        'aria-haspopup': item.sub ? 'menu' : undefined,
+        on: {
+          click: (e) => {
+            e.stopPropagation();
+            if (item.sub) return;
+            closeMenus();
+            item.run?.();
+          },
+          mouseenter: () => {
+            if (!item.sub) return void document.querySelectorAll('.popup-menu').forEach((m) => Number((m as HTMLElement).dataset.level) > level && m.remove());
+            const r = el.getBoundingClientRect();
+            showMenu(item.sub, r.right + 2, r.top - 4, level + 1);
+          },
+        },
+      },
+      h('span', { class: 'menu-icon' }, typeof item.icon === 'function' ? item.icon() : item.icon ? icon(item.icon) : null),
+      h('span', { class: 'menu-label' }, item.label),
+      item.sub ? icon('chevron-right') : item.keys ? h('span', { class: 'menu-keys' }, item.keys) : null,
+    );
+    menu.append(el);
+  }
   document.body.append(menu);
-  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }));
-  (menu.firstElementChild as HTMLElement | null)?.focus();
+  const { innerWidth, innerHeight } = window;
+  const r = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(0, Math.min(x, innerWidth - r.width - 4))}px`;
+  menu.style.top = `${Math.max(0, Math.min(y, innerHeight - r.height - 4))}px`;
+  ((menu.querySelector('button.selected') ?? menu.querySelector('button:not(:disabled)')) as HTMLElement | null)?.focus();
+  return menu;
+};
+
+const addItems = (): MenuItem[] => [
+  ...(Object.keys(TYPE_LABELS) as ServerType[]).map((t): MenuItem => ({ label: TYPE_LABELS[t], icon: () => typeIcon(t), run: () => addServer(t) })),
+  'separator',
+  { label: 'Import from PhpStorm…', icon: 'cloud-download', run: () => post({ type: 'importPhpStorm' }) },
+];
+
+const showAddMenu = (anchor: HTMLElement) => {
+  const rect = anchor.getBoundingClientRect();
+  showMenu(addItems(), rect.left, rect.bottom + 2);
 };
 
 const removeServer = () => {
@@ -342,19 +392,101 @@ const toggleDefault = () => {
   renderSidebar();
 };
 
+/** Rename in place in the server list (PhpStorm: Rename… / Shift+F6). */
+const startRename = (s: UiServer) => {
+  const li = sidebarEl.querySelector(`li[data-id="${CSS.escape(s.id)}"]`);
+  const name = li?.querySelector('.name');
+  if (!li || !name) return;
+  const input = h('input', { type: 'text', class: 'rename', value: s.name, spellcheck: 'false', 'aria-label': 'Server name' });
+  let done = false;
+  const finish = (commit: boolean) => {
+    if (done) return;
+    done = true;
+    const v = input.value.trim();
+    if (commit && v && v !== s.name) {
+      s.name = v;
+      markDirty(s);
+    }
+    renderSidebar();
+    (sidebarEl.querySelector('li.selected') as HTMLElement | null)?.focus();
+  };
+  input.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') finish(true);
+    if (e.key === 'Escape') finish(false);
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.addEventListener('click', (e) => e.stopPropagation());
+  name.replaceWith(input);
+  input.focus();
+  input.select();
+};
+
+const serverMenu = (s: UiServer): MenuItem[] => [
+  { label: 'Add', icon: 'add', sub: addItems() },
+  { label: 'Delete', icon: 'remove', keys: '⌘⌫', run: removeServer },
+  { label: 'Duplicate', icon: 'copy', keys: '⌘D', run: copyServer },
+  { label: 'Rename', keys: '⇧F6', run: () => startRename(s) },
+  { label: project()?.defaultServer === s.id ? 'Unset Default' : 'Use as Default', run: toggleDefault },
+];
+
+/** PhpStorm-style protocol icon: colored arrow (lock badge for secure protocols), globe for WebDAV, monitor for local. */
+const typeIcon = (t: ServerType) =>
+  h('span', { class: `server-icon type-${t}` }, icon(TYPE_ICONS[t]), t === 'sftp' || t.startsWith('ftps') ? icon('lock') : null);
+
+const serverIcon = (s: UiServer) => typeIcon(s.type);
+
+/** Type dropdown with protocol icons (a native <select> cannot show them). */
+const typeSelect = (value: ServerType, onChange: (t: ServerType) => void, id?: string) => {
+  const btn: HTMLButtonElement = h(
+    'button',
+    {
+      id,
+      class: 'icon-select',
+      'aria-haspopup': 'menu',
+      on: {
+        click: (e) => {
+          e.preventDefault();
+          const r = btn.getBoundingClientRect();
+          showMenu(
+            (Object.keys(TYPE_LABELS) as ServerType[]).map((t): MenuItem => ({ label: TYPE_LABELS[t], icon: () => typeIcon(t), selected: t === value, run: () => t !== value && onChange(t) })),
+            r.left,
+            r.bottom + 2,
+            0,
+            r.width,
+          );
+        },
+        keydown: (e) => {
+          if ((e as KeyboardEvent).key !== 'ArrowDown') return;
+          e.preventDefault();
+          btn.click();
+        },
+      },
+    },
+    typeIcon(value),
+    h('span', { class: 'icon-select-label' }, TYPE_LABELS[value]),
+    icon('chevron-down'),
+  );
+  return btn;
+};
+
+const selectServer = (id: string) => {
+  selection = { kind: 'server', id };
+  render();
+  (sidebarEl.querySelector('li.selected') as HTMLElement | null)?.focus();
+};
+
 const renderSidebar = () => {
   const p = project();
   const servers = p?.servers ?? [];
   const sel = currentServer();
-  const addBtn = iconButton('add', 'Add server', () => showAddMenu(addBtn));
-  const toolbar = h(
-    'div',
-    { class: 'toolbar' },
-    addBtn,
-    iconButton('remove', 'Remove server', removeServer, !sel),
-    iconButton('copy', 'Copy server', copyServer, !sel),
-    iconButton(sel && p?.defaultServer === sel.id ? 'star-full' : 'star-empty', 'Use as default server', toggleDefault, !sel),
-  );
+  const addBtn = iconButton('add', 'Add', () => showAddMenu(addBtn));
+  addBtn.classList.add('tb-add');
+  const removeBtn = iconButton('remove', 'Delete', removeServer, !sel);
+  removeBtn.classList.add('tb-remove');
+  const defaultBtn = iconButton(sel && p?.defaultServer === sel.id ? 'pass-filled' : 'pass', 'Use as Default', toggleDefault, !sel);
+  defaultBtn.classList.add('tb-default');
+  const toolbar = h('div', { class: 'toolbar' }, addBtn, removeBtn, defaultBtn);
   const list = h(
     'ul',
     { class: 'server-list', role: 'listbox', 'aria-label': 'Servers' },
@@ -365,28 +497,37 @@ const renderSidebar = () => {
           class: `${selection?.kind === 'server' && selection.id === s.id ? 'selected' : ''} ${p?.defaultServer === s.id ? 'default' : ''}`,
           role: 'option',
           tabindex: '0',
+          'data-id': s.id,
           'aria-selected': String(selection?.kind === 'server' && selection.id === s.id),
-          title: `${TYPE_LABELS[s.type]}${s.scope === 'global' ? ' · shared with all projects' : ''}`,
+          title: `${TYPE_LABELS[s.type]}${s.scope === 'global' ? ' · visible in all projects' : ''}${p?.defaultServer === s.id ? ' · default' : ''}`,
           on: {
-            click: () => {
-              selection = { kind: 'server', id: s.id };
-              render();
+            click: () => selection?.kind === 'server' && selection.id === s.id ? undefined : selectServer(s.id),
+            dblclick: () => startRename(s),
+            contextmenu: (e) => {
+              e.preventDefault();
+              if (!(selection?.kind === 'server' && selection.id === s.id)) selectServer(s.id);
+              const me = e as MouseEvent;
+              showMenu(serverMenu(s), me.clientX, me.clientY);
             },
             keydown: (e) => {
-              const k = (e as KeyboardEvent).key;
+              const ke = e as KeyboardEvent;
+              const mod = ke.metaKey || ke.ctrlKey;
               const i = servers.indexOf(s);
-              const next = k === 'ArrowDown' ? servers[i + 1] : k === 'ArrowUp' ? servers[i - 1] : undefined;
-              if (next) {
-                selection = { kind: 'server', id: next.id };
-                render();
-                (sidebarEl.querySelector('li.selected') as HTMLElement | null)?.focus();
+              const next = ke.key === 'ArrowDown' ? servers[i + 1] : ke.key === 'ArrowUp' ? servers[i - 1] : undefined;
+              if (next) return void (ke.preventDefault(), selectServer(next.id));
+              if (ke.key === 'F2' || (ke.key === 'F6' && ke.shiftKey)) return void (ke.preventDefault(), startRename(s));
+              if (mod && ke.key === 'd') return void (ke.preventDefault(), copyServer());
+              if ((mod && ke.key === 'Backspace') || ke.key === 'Delete') return void (ke.preventDefault(), removeServer());
+              if (ke.key === 'ContextMenu' || (ke.shiftKey && ke.key === 'F10')) {
+                ke.preventDefault();
+                const r = (ke.currentTarget as HTMLElement).getBoundingClientRect();
+                showMenu(serverMenu(s), r.left + 24, r.bottom);
               }
             },
           },
         },
-        icon(TYPE_ICONS[s.type]),
+        serverIcon(s),
         h('span', { class: 'name' }, s.name || '(unnamed)'),
-        s.scope === 'global' ? icon('globe', 'Shared with all projects') : null,
       ),
     ),
   );
@@ -404,9 +545,22 @@ const renderSidebar = () => {
     icon('settings-gear'),
     'Options',
   );
+  const projectPicker =
+    projects.length > 1
+      ? h(
+          'div',
+          { class: 'project-select' },
+          select(activeKey, projects.map((x) => [x.key, x.name]), (v) => {
+            activeKey = v;
+            const first = project()?.servers[0];
+            selection = first ? { kind: 'server', id: first.id } : undefined;
+            render();
+          }, 'project'),
+        )
+      : null;
   sidebarEl.replaceChildren(
-    h('div', { class: 'section-title' }, 'Servers'),
     toolbar,
+    ...(projectPicker ? [projectPicker] : []),
     servers.length ? list : h('div', { class: 'empty' }, 'No servers. Click + to add one.'),
     h('div', { class: 'sidebar-footer' }, options),
   );
@@ -417,6 +571,17 @@ const renderSidebar = () => {
 const secretField = (s: UiServer, kind: 'password' | 'passphrase') => {
   const has = kind === 'password' ? secrets[s.id]?.hasPassword : secrets[s.id]?.hasPassphrase;
   const change = secretChanges[s.id];
+  if (has && !change) {
+    // Saving with savePassword/savePassphrase false and no value forgets the stored secret.
+    const reset = h('a', { href: '#', class: 'link', on: { click: (e) => {
+      e.preventDefault();
+      const c = secretFor(s.id);
+      c[kind === 'password' ? 'savePassword' : 'savePassphrase'] = false;
+      markDirty();
+      renderContent();
+    } } }, 'Reset');
+    return h('div', { class: 'secret-saved' }, h('span', {}, `${kind === 'password' ? 'Password' : 'Passphrase'} saved permanently`), reset);
+  }
   const saveKey = kind === 'password' ? 'savePassword' : 'savePassphrase';
   const input = textInput(change?.[kind] ?? '', (v) => {
     secretFor(s.id)[kind] = v;
@@ -440,9 +605,14 @@ const testArea = (s: UiServer) => {
   };
   return h(
     'div',
+    { class: 'form-row' },
+    h('span', {}),
+    h(
+    'div',
     { class: 'test-area' },
-    button('Test Connection', () => void run(), { icon: 'plug', disabled: result?.running }),
+    button('Test Connection', () => void run(), { disabled: result?.running }),
     result ? h('span', { class: `test-result ${result.running ? 'running' : result.ok ? 'ok' : 'error'}` }, icon(result.running ? 'loading codicon-modifier-spin' : result.ok ? 'pass' : 'error'), result.message) : null,
+    ),
   );
 };
 
@@ -469,8 +639,14 @@ const rootPathRow = (s: UiServer) => {
   };
   return row(
     'Root path:',
-    h('div', { class: 'input-with-button' }, input, iconButton('folder-opened', 'Browse server…', () => void browse()), button('Autodetect', () => void detect())),
-    'All deployment paths are relative to this folder.',
+    h(
+      'div',
+      { class: 'input-with-button' },
+      h('div', { class: 'adorned' }, input, iconButton('folder-opened', 'Browse server…', () => void browse())),
+      h('span', { class: 'help', title: 'All deployment paths (mappings, Remote Host) are relative to this folder.' }, icon('question')),
+      button('Autodetect', () => void detect()),
+    ),
+    undefined,
     'root-path',
   );
 };
@@ -487,7 +663,7 @@ const renderConnection = (s: UiServer): HTMLElement => {
     markDirty(s);
     render();
   };
-  rows.push(row('Type:', select(s.type, (Object.keys(TYPE_LABELS) as ServerType[]).map((t) => [t, TYPE_LABELS[t]]), changeType, 'type'), undefined, 'type'));
+  rows.push(row('Type:', typeSelect(s.type, changeType, 'type'), undefined, 'type'));
 
   if (s.type === 'local') {
     const folder = textInput(s.rootPath, (v) => ((s.rootPath = v), markDirty(s)), { id: 'folder', placeholder: '/path/to/mounted/folder' });
@@ -505,6 +681,7 @@ const renderConnection = (s: UiServer): HTMLElement => {
         'Deployment target directory reachable through the file system (local, network share, mounted volume).',
         'folder',
       ),
+      testArea(s),
     );
   } else if (s.type === 'webdav') {
     rows.push(
@@ -526,7 +703,7 @@ const renderConnection = (s: UiServer): HTMLElement => {
     if (s.webdavAuth !== 'none') {
       rows.push(row('Username:', textInput(s.username, (v) => ((s.username = v), markDirty(s)), { id: 'username' }), undefined, 'username'), row('Password:', secretField(s, 'password')));
     }
-    rows.push(rootPathRow(s));
+    rows.push(testArea(s), rootPathRow(s));
   } else {
     rows.push(
       row(
@@ -610,7 +787,7 @@ const renderConnection = (s: UiServer): HTMLElement => {
             'div',
             { class: 'inline' },
             textInput(s.username, (v) => ((s.username = v), markDirty(s)), { id: 'username' }),
-            checkbox('Anonymous login', anonymous, (v) => {
+            checkbox('Login as anonymous', anonymous, (v) => {
               s.username = v ? 'anonymous' : '';
               markDirty(s);
               render();
@@ -622,7 +799,7 @@ const renderConnection = (s: UiServer): HTMLElement => {
       );
       if (!anonymous) rows.push(row('Password:', secretField(s, 'password')));
     }
-    rows.push(rootPathRow(s));
+    rows.push(testArea(s), rootPathRow(s));
   }
 
   rows.push(
@@ -670,7 +847,6 @@ const renderConnection = (s: UiServer): HTMLElement => {
     'div',
     { class: 'tab-body' },
     h('div', { class: 'form' }, ...rows),
-    testArea(s),
     advanced.length ? h('details', { class: 'advanced' }, h('summary', {}, 'Advanced'), h('div', { class: 'form' }, ...advanced)) : null,
   );
 };
@@ -789,7 +965,7 @@ const renderOptions = (o: UiOptions): HTMLElement => {
     input.disabled = !enabled;
     return h(
       'div',
-      { class: 'inline' },
+      { class: 'option-line' },
       checkbox(label, enabled, (v) => {
         o[key] = v ? input.value || fallback : '';
         input.disabled = !v;
@@ -798,38 +974,51 @@ const renderOptions = (o: UiOptions): HTMLElement => {
       input,
     );
   };
+  const labeled = (label: string, control: HTMLElement, hint?: string) => {
+    const id = `opt${++fieldSeq}`;
+    control.id = id;
+    return h('div', { class: 'option-line', title: hint }, h('label', { for: id }, label), control);
+  };
+  const section = (title: string, ...children: Node[]) => h('section', { class: 'option-section' }, h('h3', {}, title), ...children);
+  const sub = (...children: Node[]) => h('div', { class: 'option-sub' }, ...children);
   return h(
     'div',
-    { class: 'tab-body options' },
-    h('h2', {}, 'Options'),
-    h(
-      'div',
-      { class: 'form' },
-      row(
+    { class: 'options' },
+    section(
+      'Upload',
+      labeled(
         'Upload changed files automatically to the default server:',
-        select(o.autoUpload, [['always', 'Always'], ['onExplicitSave', 'On explicit save action (Ctrl/Cmd+S)'], ['never', 'Never']], (v) => ((o.autoUpload = v), markDirty())),
+        select(o.autoUpload, [['always', 'Always'], ['onExplicitSave', 'On explicit save action (⌘S / Ctrl+S)'], ['never', 'Never']], (v) => ((o.autoUpload = v), markDirty())),
       ),
-      checkbox('Skip external changes', o.skipExternalChanges, (v) => ((o.skipExternalChanges = v), markDirty()), 'Ignore files changed outside the editor (git checkout, build tools) when uploading automatically.'),
-      checkbox('Delete remote files when local are deleted', o.deleteRemoteOnLocalDelete, (v) => ((o.deleteRemoteOnLocalDelete = v), markDirty())),
+      sub(
+        checkbox('Skip external changes', o.skipExternalChanges, (v) => ((o.skipExternalChanges = v), markDirty()), 'Ignore files changed outside the editor (git checkout, build tools) when uploading automatically.'),
+        checkbox('Delete remote files when local are deleted', o.deleteRemoteOnLocalDelete, (v) => ((o.deleteRemoteOnLocalDelete = v), markDirty())),
+      ),
       checkbox('Create empty directories', o.createEmptyDirectories, (v) => ((o.createEmptyDirectories = v), markDirty())),
       checkbox('Preserve file timestamps', o.preserveTimestamps, (v) => ((o.preserveTimestamps = v), markDirty())),
-      row(
+      checkbox('Overwrite up-to-date files', o.overwriteUpToDate, (v) => ((o.overwriteUpToDate = v), markDirty()), 'During sync, also offer to upload files that are already identical.'),
+      labeled(
         'Warn when uploading over newer file:',
         select(o.warnOnNewerRemote, [['timestampAndSize', 'Compare timestamp and size'], ['content', 'Compare content'], ['none', 'No']], (v) => ((o.warnOnNewerRemote = v), markDirty())),
       ),
-      checkbox('Notify about remote changes', o.notifyRemoteChanges, (v) => ((o.notifyRemoteChanges = v), markDirty()), 'Re-check open remote files when VS Code regains focus.'),
-      checkbox('Confirm deleting remote files', o.confirmRemoteDelete, (v) => ((o.confirmRemoteDelete = v), markDirty())),
-      checkbox('Overwrite up-to-date files', o.overwriteUpToDate, (v) => ((o.overwriteUpToDate = v), markDirty()), 'During sync, also offer to upload files that are already identical.'),
-      permRow('Override default permissions on files:', 'filePermissions', '644'),
-      permRow('Override default permissions on folders:', 'folderPermissions', '755'),
-      row(
-        'Exclude items by name:',
-        textInput(o.excludeNames.join(';'), (v) => ((o.excludeNames = v.split(';').map((x) => x.trim()).filter(Boolean)), markDirty()), { placeholder: '.git;.idea;node_modules;*.log' }),
-        'Semicolon-separated names or wildcards, matched against every path segment.',
-      ),
-      row(
+      labeled(
         'Parallel transfers:',
         textInput(String(o.concurrency), (v) => ((o.concurrency = Math.min(16, Math.max(1, Number(v) || 1))), markDirty()), { width: 'short', invalid: (v) => (/^\d+$/.test(v) && +v >= 1 && +v <= 16 ? undefined : '1–16') }),
+      ),
+    ),
+    section(
+      'Remote files',
+      checkbox('Notify about remote changes', o.notifyRemoteChanges, (v) => ((o.notifyRemoteChanges = v), markDirty()), 'Re-check open remote files when VS Code regains focus.'),
+      checkbox('Confirm deleting remote files', o.confirmRemoteDelete, (v) => ((o.confirmRemoteDelete = v), markDirty())),
+    ),
+    section('Permissions', permRow('Override default permissions on files:', 'filePermissions', '644'), permRow('Override default permissions on folders:', 'folderPermissions', '755')),
+    section(
+      'Exclude',
+      h(
+        'div',
+        { class: 'option-stack', title: 'Semicolon-separated names or wildcards, matched against every path segment.' },
+        h('label', { for: 'exclude-names' }, 'Exclude items by name:'),
+        textInput(o.excludeNames.join(';'), (v) => ((o.excludeNames = v.split(';').map((x) => x.trim()).filter(Boolean)), markDirty()), { id: 'exclude-names', placeholder: '.git;.idea;node_modules;*.log' }),
       ),
     ),
   );
@@ -844,7 +1033,7 @@ const renderContent = () => {
     return;
   }
   if (selection?.kind === 'options') {
-    contentEl.replaceChildren(renderOptions(p.options));
+    contentEl.replaceChildren(h('div', { class: 'page-header' }, h('h2', {}, 'Options')), h('div', { class: 'tab-scroll' }, renderOptions(p.options)));
     return;
   }
   const s = currentServer();
@@ -861,35 +1050,20 @@ const renderContent = () => {
     return;
   }
   const scrollTop = contentEl.scrollTop;
-  const header = h(
-    'div',
-    { class: 'server-header' },
-    row(
-      'Name:',
-      textInput(s.name, (v) => {
-        s.name = v;
-        markDirty(s);
-        const li = sidebarEl.querySelector('li.selected .name');
-        if (li) li.textContent = v || '(unnamed)';
-      }, { id: 'server-name', invalid: (v) => (v.trim() ? undefined : 'Name is required') }),
-      undefined,
-      'server-name',
-    ),
-    checkbox('Visible only for this project', s.scope === 'project', (v) => {
-      if (v) {
-        s.scope = 'project';
-        for (const other of projects) if (other.key !== activeKey) other.servers = other.servers.filter((x) => x.id !== s.id);
-      } else {
-        s.scope = 'global';
-        for (const other of projects) {
-          if (other.key === activeKey || other.servers.some((x) => x.id === s.id)) continue;
-          other.servers.push({ ...JSON.parse(JSON.stringify(s)), mappings: [], excludedLocal: [], excludedRemote: [] });
-        }
+  const visibility = checkbox('Visible only for this project', s.scope === 'project', (v) => {
+    if (v) {
+      s.scope = 'project';
+      for (const other of projects) if (other.key !== activeKey) other.servers = other.servers.filter((x) => x.id !== s.id);
+    } else {
+      s.scope = 'global';
+      for (const other of projects) {
+        if (other.key === activeKey || other.servers.some((x) => x.id === s.id)) continue;
+        other.servers.push({ ...JSON.parse(JSON.stringify(s)), mappings: [], excludedLocal: [], excludedRemote: [] });
       }
-      markDirty();
-      renderSidebar();
-    }, 'When unchecked, the connection is shared with all projects; mappings stay per project.'),
-  );
+    }
+    markDirty();
+    renderSidebar();
+  }, 'When unchecked, the connection is shared with all projects; mappings stay per project.');
   const tabs: [Tab, string][] = [['connection', 'Connection'], ['mappings', 'Mappings'], ['excluded', 'Excluded Paths']];
   const tabBar = h(
     'div',
@@ -899,7 +1073,7 @@ const renderContent = () => {
     ),
   );
   const body = tab === 'connection' ? renderConnection(s) : tab === 'mappings' ? renderMappings(s) : renderExcluded(s);
-  contentEl.replaceChildren(header, tabBar, body);
+  contentEl.replaceChildren(tabBar, h('div', { class: 'tab-scroll' }, tab === 'connection' ? h('div', { class: 'visibility' }, visibility) : null, body));
   contentEl.scrollTop = scrollTop;
 };
 
@@ -956,42 +1130,16 @@ const renderFooter = () => {
       ? h('div', { class: 'status error', title: problems.join('\n') }, icon('warning'), `${problems.length} configuration problem(s): ${problems[0]}`)
       : h('div', { class: 'status' }, dirty ? 'Unsaved changes' : '');
   footerEl.replaceChildren(
-    h('div', { class: 'footer-left' }, button('Import from PhpStorm', () => post({ type: 'importPhpStorm' }), { icon: 'cloud-download', title: 'Read .idea/deployment.xml and webServers.xml' }), statusEl),
-    h(
-      'div',
-      { class: 'footer-right' },
-      button('Cancel', () => post({ type: 'cancel' })),
-      button('Apply', () => save(false), { disabled: !dirty }),
-      button('OK', () => save(true), { primary: true }),
-    ),
+    h('div', { class: 'footer-left' }, statusEl),
+    h('div', { class: 'footer-right' }, button('Cancel', () => post({ type: 'cancel' })), button('OK', () => save(true), { primary: true, title: '⌘S applies without closing' })),
   );
-};
-
-const renderHeader = (): HTMLElement => {
-  const header = h('header', { class: 'header' }, h('h1', {}, icon('server-environment'), 'Deployment'));
-  if (projects.length > 1) {
-    header.append(
-      h(
-        'div',
-        { class: 'project-select' },
-        h('label', { for: 'project' }, 'Project:'),
-        select(activeKey, projects.map((p) => [p.key, p.name]), (v) => {
-          activeKey = v;
-          const first = project()?.servers[0];
-          selection = first ? { kind: 'server', id: first.id } : undefined;
-          render();
-        }, 'project'),
-      ),
-    );
-  }
-  return header;
 };
 
 const render = () => {
   sidebarEl = h('aside', { class: 'sidebar' });
   contentEl = h('main', { class: 'content' });
   footerEl = h('footer', { class: 'footer' });
-  root.replaceChildren(h('div', { class: 'dialog' }, renderHeader(), h('div', { class: 'body' }, sidebarEl, contentEl), footerEl));
+  root.replaceChildren(h('div', { class: 'dialog' }, h('div', { class: 'body' }, sidebarEl, contentEl), footerEl));
   renderSidebar();
   renderContent();
   renderFooter();
@@ -1035,6 +1183,14 @@ window.addEventListener('message', (event: MessageEvent<SettingsToWebview>) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  // Escape first closes an open menu; stopping it here keeps VS Code from closing the whole popup.
+  if (e.key === 'Escape' && document.querySelector('.popup-menu')) {
+    e.stopPropagation();
+    e.preventDefault();
+    closeMenus();
+    (sidebarEl.querySelector('li.selected') as HTMLElement | null)?.focus();
+    return;
+  }
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault();
     save(false);

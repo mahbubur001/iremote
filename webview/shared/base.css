@@ -1,6 +1,10 @@
 :root {
   --gap: 8px;
-  --radius: 2px;
+  --radius: 4px;
+  --field-height: 28px;
+  --field-border: var(--vscode-input-border, color-mix(in srgb, var(--vscode-foreground) 14%, transparent));
+  --field-border-hover: color-mix(in srgb, var(--vscode-foreground) 28%, transparent);
+  --field-ring: color-mix(in srgb, var(--vscode-focusBorder) 30%, transparent);
   --border: var(--vscode-panel-border, var(--vscode-widget-border, rgba(128, 128, 128, 0.35)));
 }
 
@@ -27,24 +31,54 @@ input[type='text'],
 input[type='password'],
 input:not([type]),
 select {
-  height: 26px;
-  padding: 2px 6px;
+  height: var(--field-height);
+  padding: 0 10px;
   color: var(--vscode-input-foreground);
   background: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border, transparent);
+  border: 1px solid var(--field-border);
   border-radius: var(--radius);
   font: inherit;
   min-width: 0;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+input::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+  opacity: 1;
 }
 
 select {
+  appearance: none;
+  padding-right: 28px;
   color: var(--vscode-dropdown-foreground);
-  background: var(--vscode-dropdown-background);
-  border-color: var(--vscode-dropdown-border, transparent);
+  background-color: var(--vscode-dropdown-background);
+  border-color: var(--vscode-dropdown-border, var(--field-border));
+  /* Chevron drawn with two gradients so it follows the theme's text color. */
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 50%,
+    calc(100% - 10px) 50%;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+input:hover:not(:disabled):not(:focus),
+select:hover:not(:disabled):not(:focus) {
+  border-color: var(--field-border-hover);
 }
 
 input:focus,
-select:focus,
+select:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+  box-shadow: 0 0 0 3px var(--field-ring);
+}
+
 button:focus-visible,
 li:focus-visible,
 summary:focus-visible {
@@ -56,8 +90,14 @@ input.invalid {
   border-color: var(--vscode-inputValidation-errorBorder);
 }
 
-input:disabled {
+input.invalid:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--vscode-inputValidation-errorBorder) 30%, transparent);
+}
+
+input:disabled,
+select:disabled {
   opacity: 0.5;
+  cursor: default;
 }
 
 input[type='checkbox'] {
@@ -71,7 +111,7 @@ input[type='checkbox'] {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 26px;
+  height: var(--field-height);
   padding: 0 12px;
   color: var(--vscode-button-secondaryForeground);
   background: var(--vscode-button-secondaryBackground);

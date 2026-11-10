@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.3
+
+- Deployment Settings looks like PhpStorm's dialog: server list with type icons, + / − / default toolbar and a
+  right-click menu (Add, Delete, Duplicate, Rename, Use as Default); servers are renamed in the list (double-click,
+  F2 or Shift+F6); pill tabs, labels on the left, hints as tooltips, "Password saved permanently · Reset",
+  Test Connection under the credentials. Footer is Cancel / OK (⌘S / Ctrl+S still applies without closing);
+  Import from PhpStorm moved into the + menu.
+- Remote Host: a ▾ button on the server row (and **Choose Server…** in its context menu) switches the server, in place of
+  PhpStorm's server dropdown.
+- Type dropdown shows PhpStorm-style protocol icons (also in the server list and the + menu).
+- Options page regrouped into Upload / Remote files / Permissions / Exclude sections.
+- Escape closes an open menu instead of the whole Deployment popup; a click no longer closes a just-opened menu.
+- Fix: the floating-window mode no longer moves another tab (e.g. a terminal) into the new window; Settings opens
+  directly in its own window. "Always on top" for that window was dropped.
+- Text fields and dropdowns: rounded, theme-aware borders with a focus ring; narrow dialogs stack labels above fields.
+
 ## 1.2.2
 
 - Deployment Settings opens as a popup over the window, like PhpStorm's Deployment dialog (VS Code's modal editor).

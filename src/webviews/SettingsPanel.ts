@@ -19,8 +19,9 @@ const settingsUri = (): vscode.Uri => {
   const root = vscode.workspace.workspaceFolders?.[0]?.uri.path ?? '/';
   return vscode.Uri.from({ scheme: SETTINGS_SCHEME, path: posix.join(root, 'Deployment.iremote-deployment') });
 };
-/** VS Code's internal MODAL_EDITOR_GROUP. */
+/** VS Code's internal MODAL_EDITOR_GROUP and AUX_WINDOW_GROUP. */
 const MODAL_GROUP = -4;
+const AUX_WINDOW_GROUP = -3;
 
 const projectKey = (p: Project) => p.folder.uri.toString();
 
@@ -45,11 +46,14 @@ export class SettingsPanel {
   private readonly disposables: vscode.Disposable[] = [];
 
   private static pendingServer?: string;
+  private static pendingModal = false;
 
   /**
-   * "popup" opens the panel in VS Code's modal editor (a centered dialog over the window, `workbench.editor.useModal`).
-   * The public API cannot target that group, so it goes through `_workbench.openWith` with the modal group (-4) and a
-   * custom editor on a placeholder resource; if that is unavailable it falls back to the floating window.
+   * "popup" opens the panel in VS Code's modal editor (a centered dialog over the window, `workbench.editor.useModal`),
+   * "window" in a new floating window. The public API cannot target either group, so both go through
+   * `_workbench.openWith` with the internal group (-4 modal, -3 new window) and a custom editor on a placeholder
+   * resource. The panel is opened straight into its target: moving "the active editor" afterwards could move another
+   * tab (e.g. a terminal) if focus changed in between. If the command is unavailable it opens as an editor tab.
    */
   static register(s: Services): vscode.Disposable {
     return vscode.window.registerCustomEditorProvider(
@@ -63,7 +67,7 @@ export class SettingsPanel {
           }
           panel.title = 'Deployment';
           panel.webview.options = SettingsPanel.webviewOptions(s);
-          SettingsPanel.current = new SettingsPanel(s, panel, SettingsPanel.pendingServer, true);
+          SettingsPanel.current = new SettingsPanel(s, panel, SettingsPanel.pendingServer, SettingsPanel.pendingModal);
           SettingsPanel.pendingServer = undefined;
         },
       } satisfies vscode.CustomReadonlyEditorProvider,
@@ -79,48 +83,34 @@ export class SettingsPanel {
       return;
     }
     const openIn = vscode.workspace.getConfiguration('iremote').get<string>('settings.openIn', 'popup');
-    if (openIn === 'popup' && vscode.workspace.getConfiguration('workbench.editor').get<string>('useModal', 'off') !== 'off') {
-      SettingsPanel.pendingServer = serverId;
-      const fallback = (why: string) => {
-        log.info(`Deployment popup unavailable (${why}), using a window`);
-        SettingsPanel.pendingServer = undefined;
-        if (!SettingsPanel.current) SettingsPanel.open(s, serverId, true);
-      };
-      // The editor is resolved before the command returns; nothing open afterwards means the internal command changed.
-      void Promise.resolve(vscode.commands.executeCommand('_workbench.openWith', settingsUri(), SETTINGS_VIEW_TYPE, [MODAL_GROUP, { pinned: true }])).then(
-        () => SettingsPanel.current || fallback('no editor opened'),
-        (e) => fallback(errorMessage(e)),
-      );
-      return;
-    }
-    SettingsPanel.open(s, serverId, openIn !== 'editor');
+    if (openIn === 'editor') return SettingsPanel.open(s, serverId);
+    const modal = openIn === 'popup' && vscode.workspace.getConfiguration('workbench.editor').get<string>('useModal', 'off') !== 'off';
+    SettingsPanel.pendingServer = serverId;
+    SettingsPanel.pendingModal = modal;
+    const fallback = (why: string) => {
+      log.info(`Deployment ${modal ? 'popup' : 'window'} unavailable (${why}), using an editor tab`);
+      SettingsPanel.pendingServer = undefined;
+      if (!SettingsPanel.current) SettingsPanel.open(s, serverId);
+    };
+    // The editor is resolved before the command returns; nothing open afterwards means the internal command changed.
+    void Promise.resolve(
+      vscode.commands.executeCommand('_workbench.openWith', settingsUri(), SETTINGS_VIEW_TYPE, [modal ? MODAL_GROUP : AUX_WINDOW_GROUP, { pinned: true }]),
+    ).then(
+      () => SettingsPanel.current || fallback('no editor opened'),
+      (e) => fallback(errorMessage(e)),
+    );
   }
 
   private static webviewOptions(s: Services): vscode.WebviewOptions {
     return { enableScripts: true, localResourceRoots: [vscode.Uri.joinPath(s.context.extensionUri, 'dist', 'webview')] };
   }
 
-  private static open(s: Services, serverId: string | undefined, float: boolean): void {
+  private static open(s: Services, serverId: string | undefined): void {
     const panel = vscode.window.createWebviewPanel('iremote.settings', 'Deployment', vscode.ViewColumn.Active, {
       ...SettingsPanel.webviewOptions(s),
       retainContextWhenHidden: true,
     });
     SettingsPanel.current = new SettingsPanel(s, panel, serverId);
-    if (float) void SettingsPanel.float(panel);
-  }
-
-  /**
-   * Fallback for VS Code without modal editors: the panel moves into its own floating window (it closes with
-   * OK / Cancel, as its only editor). The webview reloads on the move and re-sends "ready", which re-initializes it.
-   * The window is then made compact (no tab bar / title chrome) and kept on top so it reads as a dialog.
-   */
-  private static async float(panel: vscode.WebviewPanel): Promise<void> {
-    for (let i = 0; i < 25 && !panel.active; i++) await new Promise((r) => setTimeout(r, 20));
-    if (!panel.active) return;
-    const run = (cmd: string) => Promise.resolve(vscode.commands.executeCommand(cmd)).then(() => true, () => false);
-    if (!(await run('workbench.action.moveEditorToNewWindow'))) return;
-    await run('workbench.action.enableCompactAuxiliaryWindow');
-    await run('workbench.action.enableWindowAlwaysOnTop');
   }
 
   private constructor(

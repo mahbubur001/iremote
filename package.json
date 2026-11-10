@@ -2,7 +2,7 @@
   "name": "iremote",
   "displayName": "iRemote — Deployment & Remote Host",
   "description": "PhpStorm-style deployment for VS Code: SFTP, FTP, FTPS, WebDAV and local servers with path mappings, auto-upload, Remote Host browser, direct remote editing, sync and compare.",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "publisher": "itemcoder",
   "license": "MIT",
   "repository": {
@@ -166,6 +166,12 @@
         "title": "Choose Server…",
         "category": "iRemote",
         "icon": "$(server)"
+      },
+      {
+        "command": "iremote.remote.switchServerInline",
+        "title": "Choose Server…",
+        "category": "iRemote",
+        "icon": "$(chevron-down)"
       },
       {
         "command": "iremote.remote.refresh",
@@ -335,6 +341,10 @@
     ],
     "menus": {
       "commandPalette": [
+        {
+          "command": "iremote.remote.switchServerInline",
+          "when": "false"
+        },
         {
           "command": "iremote.remote.refresh",
           "when": "false"
@@ -541,6 +551,16 @@
       ],
       "view/item/context": [
         {
+          "command": "iremote.remote.switchServerInline",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-server/",
+          "group": "inline@0"
+        },
+        {
+          "command": "iremote.remote.switchServer",
+          "when": "view == iremote.remoteHost && viewItem =~ /^remote-server/",
+          "group": "0_server@0"
+        },
+        {
           "command": "iremote.remote.open",
           "when": "view == iremote.remoteHost && viewItem =~ /^remote-file/",
           "group": "1_open@1"
@@ -656,7 +676,7 @@
             "editor"
           ],
           "enumDescriptions": [
-            "Open Deployment Settings as a popup over the window, like PhpStorm's dialog (VS Code's modal editor; falls back to a floating window when modal editors are off or unavailable).",
+            "Open Deployment Settings as a popup over the window, like PhpStorm's dialog (VS Code's modal editor; uses a floating window when `workbench.editor.useModal` is off).",
             "Open Deployment Settings in its own floating window.",
             "Open Deployment Settings as an editor tab."
           ],

@@ -6,27 +6,13 @@
   height: 100%;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
+.project-select {
+  padding: 6px 8px;
   border-bottom: 1px solid var(--border);
 }
 
-.header h1 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: 1.15em;
-  font-weight: 600;
-}
-
-.project-select {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.project-select select {
+  width: 100%;
 }
 
 .body {
@@ -44,19 +30,22 @@
   background: var(--vscode-sideBar-background);
 }
 
-.section-title {
-  padding: 8px 12px 4px;
-  font-size: 0.85em;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: var(--vscode-sideBarSectionHeader-foreground, var(--vscode-descriptionForeground));
-}
-
 .toolbar {
   display: flex;
   gap: 2px;
-  padding: 2px 8px 6px;
-  border-bottom: 1px solid var(--border);
+  padding: 6px 8px;
+}
+
+.toolbar .tb-add:not(:disabled) {
+  color: var(--vscode-charts-green, #3fb950);
+}
+
+.toolbar .tb-remove:not(:disabled) {
+  color: var(--vscode-charts-red, #f85149);
+}
+
+.toolbar .tb-default:not(:disabled) {
+  color: var(--vscode-charts-green, #3fb950);
 }
 
 .server-list {
@@ -71,9 +60,100 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 12px;
+  height: 24px;
+  margin: 0 6px;
+  padding: 0 8px;
+  border-radius: 4px;
   cursor: pointer;
   user-select: none;
+}
+
+.server-list li:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.server-list li input.rename {
+  flex: 1;
+  height: 20px;
+  padding: 0 4px;
+}
+
+/* PhpStorm-like server type icon: an arrow, orange with a lock badge for secure protocols, teal otherwise. */
+.server-icon {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 16px;
+  color: var(--vscode-charts-green, #3fb6a8);
+}
+
+.server-icon.type-sftp {
+  color: var(--vscode-charts-orange, #e8a33d);
+}
+
+.server-icon.type-ftps,
+.server-icon.type-ftps-implicit {
+  color: var(--vscode-charts-blue, #4c9be8);
+}
+
+.server-icon.type-webdav {
+  color: var(--vscode-charts-green, #7cbf3f);
+}
+
+.server-icon.type-local {
+  color: var(--vscode-charts-yellow, #e5c07b);
+}
+
+/* Dropdown button that looks like the other fields but can show icons. */
+.icon-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: var(--field-height);
+  padding: 0 8px 0 10px;
+  color: var(--vscode-dropdown-foreground);
+  background: var(--vscode-dropdown-background);
+  border: 1px solid var(--vscode-dropdown-border, var(--field-border));
+  border-radius: var(--radius);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.icon-select:hover {
+  border-color: var(--field-border-hover);
+}
+
+.icon-select:focus-visible,
+.icon-select[aria-expanded='true'] {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+  box-shadow: 0 0 0 3px var(--field-ring);
+}
+
+.icon-select-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popup-menu button.selected {
+  background: var(--vscode-list-inactiveSelectionBackground, var(--vscode-list-hoverBackground));
+}
+
+.server-icon .codicon-lock {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  font-size: 9px !important;
+  background: var(--vscode-sideBar-background, var(--vscode-editor-background));
+  border-radius: 2px;
 }
 
 .server-list li .name {
@@ -125,36 +205,49 @@
 }
 
 .content {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
-  padding: 12px 20px 20px;
+  container-type: inline-size;
 }
 
-.server-header {
-  padding-bottom: 8px;
+.tab-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px 20px;
+}
+
+.visibility {
+  padding: 12px 0 2px;
 }
 
 .tabs {
   display: flex;
-  gap: 2px;
-  margin: 8px 0 0;
+  gap: 4px;
+  padding: 6px 16px 6px 8px;
   border-bottom: 1px solid var(--border);
 }
 
+/* Segmented "pill" tabs as in PhpStorm's Deployment dialog. */
 .tabs button {
-  padding: 6px 14px;
-  color: var(--vscode-tab-inactiveForeground, var(--vscode-descriptionForeground));
+  height: 24px;
+  padding: 0 10px;
+  color: var(--vscode-foreground);
   background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
   font: inherit;
   cursor: pointer;
 }
 
+.tabs button:hover:not(.active) {
+  background: var(--vscode-toolbar-hoverBackground, var(--vscode-list-hoverBackground));
+}
+
 .tabs button.active {
-  color: var(--vscode-tab-activeForeground, var(--vscode-foreground));
-  border-bottom-color: var(--vscode-focusBorder);
+  background: color-mix(in srgb, var(--vscode-focusBorder) 22%, transparent);
+  border-color: var(--vscode-focusBorder);
 }
 
 .tab-body {
@@ -163,10 +256,10 @@
 
 .form {
   display: grid;
-  grid-template-columns: minmax(150px, max-content) minmax(0, 1fr);
-  gap: 10px 14px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 24px;
   align-items: center;
-  max-width: 900px;
+  max-width: 720px;
 }
 
 .form-row {
@@ -174,8 +267,7 @@
 }
 
 .form-row > label {
-  justify-self: end;
-  text-align: right;
+  justify-self: start;
 }
 
 .form-row .control {
@@ -214,7 +306,7 @@
 
 .inline > input[type='text'],
 .inline > input:not([type]) {
-  flex: 1;
+  flex: 1 1 140px;
 }
 
 .host-port {
@@ -224,7 +316,7 @@
 }
 
 .host-port > input:first-child {
-  flex: 1;
+  flex: 1 1 140px;
 }
 
 input.short {
@@ -239,7 +331,7 @@ input.short {
 }
 
 .input-with-button > input {
-  flex: 1;
+  flex: 1 1 140px;
 }
 
 .secret-field {
@@ -249,15 +341,93 @@ input.short {
 }
 
 .secret-field > input {
-  flex: 1;
+  flex: 1 1 140px;
+}
+
+/* Rows with an input plus checkboxes / buttons wrap instead of squeezing the input to nothing. */
+.inline,
+.host-port,
+.secret-field,
+.input-with-button {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+
+.inline label,
+.secret-field label {
+  white-space: nowrap;
+}
+
+/* Narrow dialog: labels go above their fields. */
+@container (max-width: 560px) {
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .form-row > label {
+    justify-self: start;
+    text-align: left;
+    margin-top: 8px;
+  }
+
+  .form > .checkbox-row,
+  .form > .inline {
+    grid-column: 1;
+  }
 }
 
 .test-area {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 16px 0 0;
-  max-width: 900px;
+  min-width: 0;
+}
+
+.secret-saved {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--field-height);
+}
+
+a.link {
+  color: var(--vscode-textLink-foreground);
+  text-decoration: none;
+}
+
+a.link:hover {
+  color: var(--vscode-textLink-activeForeground);
+  text-decoration: underline;
+}
+
+/* Input with an icon button inside its right edge (folder browse). */
+.adorned {
+  position: relative;
+  display: flex;
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.adorned > input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 30px;
+}
+
+.adorned > .icon-button {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  transform: translateY(-50%);
+}
+
+.help {
+  display: inline-flex;
+  color: var(--vscode-charts-red, #f85149);
+  cursor: help;
 }
 
 .test-result {
@@ -275,14 +445,42 @@ input.short {
 }
 
 .advanced {
-  margin-top: 18px;
+  margin-top: 20px;
   max-width: 900px;
 }
 
 .advanced summary {
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 4px 0 10px;
-  color: var(--vscode-descriptionForeground);
+  list-style: none;
+  cursor: pointer;
+}
+
+.advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced summary::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  margin: 0 3px 0 1px;
+  border-right: 1.5px solid var(--vscode-focusBorder);
+  border-bottom: 1.5px solid var(--vscode-focusBorder);
+  transform: rotate(-45deg);
+  transition: transform 0.12s ease;
+}
+
+.advanced[open] summary::before {
+  transform: rotate(45deg);
+}
+
+.advanced summary::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
 }
 
 table.grid {
@@ -405,20 +603,22 @@ h3 {
   z-index: 10;
   display: flex;
   flex-direction: column;
-  min-width: 200px;
-  padding: 4px 0;
+  min-width: 180px;
+  padding: 4px;
   color: var(--vscode-menu-foreground);
   background: var(--vscode-menu-background);
   border: 1px solid var(--vscode-menu-border, var(--border));
-  border-radius: 4px;
-  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px var(--vscode-widget-shadow);
 }
 
 .popup-menu button {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 12px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 4px;
   color: inherit;
   background: transparent;
   border: none;
@@ -427,8 +627,41 @@ h3 {
   cursor: pointer;
 }
 
-.popup-menu button:hover,
-.popup-menu button:focus {
+.popup-menu .menu-icon {
+  display: inline-flex;
+  width: 16px;
+}
+
+.popup-menu .menu-label {
+  flex: 1;
+}
+
+.popup-menu .menu-keys {
+  margin-left: 24px;
+  opacity: 0.6;
+}
+
+.popup-menu .codicon-add {
+  color: var(--vscode-charts-green, #3fb950);
+}
+
+.popup-menu .codicon-remove {
+  color: var(--vscode-charts-red, #f85149);
+}
+
+.popup-menu button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--vscode-menu-separatorBackground, var(--border));
+}
+
+.popup-menu button:hover:not(:disabled),
+.popup-menu button:focus:not(:disabled) {
   color: var(--vscode-menu-selectionForeground);
   background: var(--vscode-menu-selectionBackground);
   outline: none;
@@ -505,4 +738,73 @@ h3 {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* Options page: PhpStorm-style groups, one column. */
+.page-header {
+  padding: 10px 16px 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-header h2 {
+  margin: 0;
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.options {
+  max-width: 720px;
+  padding-top: 4px;
+}
+
+.option-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.option-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 2px;
+  font-size: 0.92em;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+}
+
+.option-section h3::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--border);
+}
+
+.option-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+
+.option-line > select {
+  width: auto;
+  min-width: 220px;
+}
+
+.option-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 22px;
+}
+
+.option-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option-stack > input {
+  width: 100%;
 }

@@ -71,6 +71,8 @@ export const registerRemoteCommands = (s: Services): vscode.Disposable[] => {
       }),
     ),
 
+    // The ▾ on the server row in Remote Host: PhpStorm's server dropdown, as far as a tree view allows.
+    vscode.commands.registerCommand('iremote.remote.switchServerInline', () => vscode.commands.executeCommand('iremote.remote.switchServer')),
     vscode.commands.registerCommand('iremote.remote.refresh', (node?: RemoteNode) => tree.refresh(node && node.kind !== 'error' ? node : undefined)),
     vscode.commands.registerCommand('iremote.remote.collapseAll', () =>
       vscode.commands.executeCommand('workbench.actions.treeView.iremote.remoteHost.collapseAll'),
