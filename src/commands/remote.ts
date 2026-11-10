@@ -58,13 +58,13 @@ export const registerRemoteCommands = (s: Services): vscode.Disposable[] => {
     vscode.commands.registerCommand(
       'iremote.remote.switchServer',
       guarded('Choose server', async () => {
-        const all = config.uniqueServers();
-        const sel = tree.selectedServerId;
+        const sel = tree.currentServer?.id;
         const picked = await vscode.window.showQuickPick(
-          [
-            { label: `${!sel ? '$(check) ' : ''}All servers`, id: undefined as string | undefined, description: '' },
-            ...all.map((sv) => ({ label: `${sv.id === sel ? '$(check) ' : ''}${sv.name}`, description: `${SERVER_TYPE_LABELS[sv.type]} · ${sv.host}`, id: sv.id })),
-          ],
+          config.uniqueServers().map((sv) => ({
+            label: `${sv.id === sel ? '$(check) ' : ''}${sv.name}`,
+            description: `${SERVER_TYPE_LABELS[sv.type]} · ${sv.type === 'local' ? sv.rootPath : sv.host}`,
+            id: sv.id,
+          })),
           { placeHolder: 'Show which server in Remote Host?' },
         );
         if (picked) await tree.selectServer(picked.id);

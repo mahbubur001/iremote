@@ -72,17 +72,15 @@ export class RemoteHostTree implements vscode.TreeDataProvider<RemoteNode>, vsco
     this.refresh();
   }
 
-  private visibleServers(): ResolvedServer[] {
+  /** Like PhpStorm, Remote Host shows one server: the chosen one, else a project's default server, else the first. */
+  get currentServer(): ResolvedServer | undefined {
     const all = this.config.uniqueServers();
     const sel = this.selectedServerId;
-    const picked = sel ? all.filter((s) => s.id === sel) : [];
-    return picked.length ? picked : all;
+    return all.find((s) => s.id === sel) ?? all.find((s) => s.project.config.defaultServer === s.id) ?? all[0];
   }
 
   private updateMessage(): void {
-    const sel = this.selectedServerId;
-    const server = sel ? this.config.findServer(sel) : undefined;
-    this.view.description = server ? server.name : undefined;
+    this.view.description = this.currentServer?.name;
   }
 
   refresh(node?: RemoteNode): void {
@@ -148,7 +146,10 @@ export class RemoteHostTree implements vscode.TreeDataProvider<RemoteNode>, vsco
   }
 
   async getChildren(node?: RemoteNode): Promise<RemoteNode[]> {
-    if (!node) return this.visibleServers().map((server) => ({ kind: 'server', server }));
+    if (!node) {
+      const server = this.currentServer;
+      return server ? [{ kind: 'server', server }] : [];
+    }
     if (node.kind === 'error') return [];
     if (node.kind === 'entry' && !isDirStat(node.stat)) return [];
     const dir = nodePath(node);

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1
+
+- Remote Host shows one server at a time, like PhpStorm: the last chosen one, else the default server, else the first.
+  **Choose Server…** (server icon) switches it; the "All servers" list is gone.
+- The floating Deployment Settings window opens in compact mode (no tab bar) and stays on top, closer to PhpStorm's
+  dialog.
+
 ## 1.2.0
 
 - **Neovim plugin**, using the same `.vscode/iremote.json` and the same engine as the extension

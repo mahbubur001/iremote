@@ -49,12 +49,16 @@ export class SettingsPanel {
   /**
    * PhpStorm shows Deployment as a dialog. Extensions cannot open modal windows, so the panel moves into its own
    * floating window (it closes with OK / Cancel, as its only editor). The webview reloads on the move and re-sends
-   * "ready", which re-initializes it. Older VS Code without auxiliary windows keeps the editor tab.
+   * "ready", which re-initializes it. The window is then made compact (no tab bar / title chrome) and kept on top so
+   * it reads as a dialog. Older VS Code without auxiliary windows (or these commands) keeps what it supports.
    */
   private static async float(panel: vscode.WebviewPanel): Promise<void> {
     for (let i = 0; i < 25 && !panel.active; i++) await new Promise((r) => setTimeout(r, 20));
     if (!panel.active) return;
-    await Promise.resolve(vscode.commands.executeCommand('workbench.action.moveEditorToNewWindow')).catch(() => undefined);
+    const run = (cmd: string) => Promise.resolve(vscode.commands.executeCommand(cmd)).then(() => true, () => false);
+    if (!(await run('workbench.action.moveEditorToNewWindow'))) return;
+    await run('workbench.action.enableCompactAuxiliaryWindow');
+    await run('workbench.action.enableWindowAlwaysOnTop');
   }
 
   private constructor(

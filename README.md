@@ -24,7 +24,7 @@ dialogs as PhpStorm's **Deployment** settings and **Remote Host** tool window.
 | Exclude items by name | ✓ (`.git;.idea;*.log` …) |
 | Upload to… / Download from… / Compare with Deployed Version | ✓ (Explorer, editor and tab context menus → **Deployment**) |
 | Sync with Deployed to… | ✓ side-by-side dialog with per-file direction |
-| Remote Host tool window | ✓ browse, edit, create, rename, delete, chmod, drag & drop |
+| Remote Host tool window | ✓ one server at a time (**Choose Server…** switches it), browse, edit, create, rename, delete, chmod, drag & drop |
 | Edit remote file | ✓ native editor via the `iremote://` file system; saving writes to the server |
 | Notify about remote changes | ✓ open remote files are re-checked when VS Code regains focus |
 | File Transfer tool window | ✓ panel with direction, progress, duration and errors |
